@@ -4,6 +4,7 @@
  "autoname": "naming_series:naming_series",
  "creation": "2024-08-22 16:19:47.046593",
  "doctype": "DocType",
+ "document_type": "Document",
  "engine": "InnoDB",
  "field_order": [
   "details_tab",
@@ -94,7 +95,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-09-03 12:36:39.200529",
+ "modified": "2024-09-03 15:10:45.221418",
  "modified_by": "Administrator",
  "module": "Jollys Receiving",
  "name": "Receipt Audit",
@@ -115,6 +116,7 @@
    "write": 1
   }
  ],
+ "show_name_in_global_search": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []
