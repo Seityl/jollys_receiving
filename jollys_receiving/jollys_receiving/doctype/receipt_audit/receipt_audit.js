@@ -3,20 +3,40 @@
 
 frappe.ui.form.on("Receipt Audit", {
     onload: function(frm) {
-        frm.set_value('scan_code', '');
+        // Hide Scan Section if document is new and not saved
+        //  if (frm.doc.__islocal) {
+        //     frm.set_df_property('section_break_scanning', 'hidden', true);
+        // } else {
+        //     frm.set_df_property('section_break_scanning', 'hidden', false);
+        // }
     },
 
     refresh: function(frm) {
-        // Add Stock Entry button under Create if document is submitted
-    //     if (frm.doc.docstatus == 1) {
-    //         frm.add_custom_button(
-    //             __("Stock Entry"),
-    //             frm.cscript["Stock Entry"],
-    //             __("Create")
-    //         );
+        
+        if (frm.doc.is_first_save) {
+            frm.set_value('is_first_save', false);
+            frm.reload_doc();
+        }
 
-    //         frm.page.set_inner_btn_group_as_primary(__("Create"));
-    //     }
+        // Add Stock Entry button under Create if document is submitted
+        if (frm.doc.docstatus == 1) {
+            frm.add_custom_button(
+                __("Stock Entry"),
+                frm.cscript["Stock Entry"],
+                __("Create")
+            );
+
+            frm.page.set_inner_btn_group_as_primary(__("Create"));
+
+            // Show Scan Section if document is saved
+            // if (!frm.doc.__islocal) {
+            //     frm.set_df_property('section_break_scanning', 'hidden', false);
+            // }
+
+            // Hide verify scan checkbox when document is submitted
+            frm.fields_dict['verify_scan'].df.hidden = true;
+            frm.refresh_field('verify_scan');
+        }
     },
 
     scan_code: function(frm) {
@@ -56,7 +76,7 @@ function update_not_verified_item(frm) {
             receipt_audit_name: frm.doc.name
         },
         callback: (r) => {
-            console.log(r.message)
+            // console.log(r.message)
             if(r.message['data']) {
                 if(r.message['status'] === 'success') {
                     frappe.show_alert({
@@ -238,7 +258,7 @@ function create_verify_dialogue(data, frm) {
                         frappe.show_alert({
                             message: r.message['message'],
                             indicator:'green'
-                        }, 5);
+                        }, 10);
         
                         if(values['verify_conversion_factor'] != data['verify_conversion_factor']){
                             frappe.call({
@@ -296,64 +316,9 @@ function create_verify_dialogue(data, frm) {
 }
 
 
-// cur_frm.cscript["Stock Entry"] = function() {
-//     frappe.model.open_mapped_doc({
-//         method: "jollys_receiving.api.create_stock_entry",
-// 		frm: cur_frm
-// 	});
-// };
-
-//Add Stock Entry in dashboard
-// var dashboard_sales_order_doctype = function (frm, doctype) {
-//     frappe.call({
-//             'method': 'jollys_receiving.api.get_open_count',
-//             'args': {
-//                 'docname': cur_frm.docname,
-//             },
-//             'callback': function(r){
-//                 var items = [];
-//                 $.each((r.message), function(i, d){
-//                     items.push(d.name);		
-//                 })
-//                 load_template_links(frm, doctype, items);
-//             }
-//     });
-// }
-
-// var load_template_links = function(frm, doctype, items){
-//     var sales_orders = ['in'];
-//     var count_links = 0;
-//     items.forEach(function(item){
-//         console.log("in loop");		
-//         if( sales_orders.indexOf(item) == -1){
-//             count_links++;
-//             sales_orders.push(item);
-//         }
-// });
-
-// var parent = $('.form-dashboard-wrapper [data-doctype="Receipt Audit"]').closest('div').parent();
-//     parent.find('[data-doctype="' + doctype + '"]').remove();
-//     parent.append(frappe.render_template("dashboard_sales_order_doctype", {
-//         doctype: doctype
-// }));
-
-// var self = parent.find('[data-doctype="' + doctype + '"]');
-
-
-// // bind links
-// self.find(".badge-link").on('click', function () {
-//     frappe.route_options = {
-//         "sales_order_no": frm.doc.name
-//     }
-//     frappe.set_route("List", doctype);
-// });
-
-// self.find('.count').html(count_links);
-// }
-
-// frappe.templates["dashboard_sales_order_doctype"] = ' \
-//     <div class="document-link" data-doctype="{{ doctype }}"> \
-//     <a class="badge-link small">{{ __(doctype) }}</a> \
-//     <span class="text-muted small count"></span> \
-//     <span class="open-notification hidden" title="{{ __("Open {0}", [__(doctype)])}}"></span> \
-//     </div>';
+cur_frm.cscript["Stock Entry"] = function() {
+    frappe.model.open_mapped_doc({
+        method: "jollys_receiving.api.create_stock_entry",
+		frm: cur_frm
+	});
+};

@@ -124,9 +124,9 @@ app_license = "mit"
 
 # doc_events = {
 # 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
+# 		"on_update": "jollys_receiving.api.on_update",
+# 		# "on_cancel": "method",
+# 		# "on_trash": "method"
 # 	}
 # }
 
@@ -226,4 +226,3 @@ app_license = "mit"
 # default_log_clearing_doctypes = {
 # 	"Logging DocType Name": 30  # days to retain logs
 # }
-

@@ -79,49 +79,44 @@ def update_row_conversion_factor_by_item_code_code(receipt_audit_name, item_code
             'message': f'An unexpected error occurred: {str(e)}'
         }
 
-# @frappe.whitelist()
-# def create_stock_entry(source_name, target_doc=None):
-#     def set_missing_values(source, target):
-#         target.stock_entry_type = "Material Transfer"
-#         target.purpose = "Material Transfer"
-#         target.to_warehouse = 'Mega Stock - JP'
-#         target.from_warehouse = 'Port Location - JP'
-#         # target.purchase_receipt_no = 'MAT-PRE-2024-00008'
-#         target.save()
-#         target.set_missing_values()
+@frappe.whitelist()
+def create_stock_entry(source_name, target_doc=None):
+    def set_missing_values(source, target):
+        target.stock_entry_type = "Material Transfer"
+        target.purpose = "Material Transfer"
+        target.to_warehouse = 'Mega Stock - JP'
+        target.from_warehouse = 'Port Location - JP'
+        # target.purchase_receipt_no = 'MAT-PRE-2024-00008'
+        target.save()
+        target.set_missing_values()
 
-#     doclist = get_mapped_doc(
-# 		'Receipt Audit',
-# 		source_name,
-# 		{
-# 			'Receipt Audit': {
-# 				'doctype': 'Stock Entry',
-# 			},
-# 			'Receipt Audit Item': {
-# 				'doctype': 'Stock Entry Detail',
-# 				"field_map": {
-# 					"warehouse": "s_warehouse",
-# 					"reference_purchase_receipt": "reference_purchase_receipt",
-# 					"batch_no": "batch_no",
-# 				},
-# 			},
-# 		},
-# 		target_doc,
-# 		set_missing_values,
-# 	)
+    doclist = get_mapped_doc(
+		'Receipt Audit',
+		source_name,
+		{
+			'Receipt Audit': {
+				'doctype': 'Stock Entry',
+			},
+			'Receipt Audit Item': {
+				'doctype': 'Stock Entry Detail',
+				"field_map": {
+					"warehouse": "s_warehouse",
+					"reference_purchase_receipt": "reference_purchase_receipt",
+                    "qty": "qty",
+                    "item_code": "item_code",
+                    "uom":"uom",
+                    "conversion_factor":"conversion_factor"
+				},
+			},
+		},
+		target_doc,
+		set_missing_values,
+	)
     
-#     return doclist
-
-# @frappe.whitelist()
-# def get_open_count(**args):
-#     args = frappe._dict(args)
-#     receipt_audit = frappe.get_doc('Receipt Audit', args.docname)
-# 	# doc = frappe.get_all("Stock Entry", 
-# 	# 	filters={
-# 	# 		'sales_order_no': args.docname,
-# 	# 		'purpose': 'Material Transfer',
-# 	# 	},
-# 	# 	fields=[
-# 	# 		'name', 'sales_order_no',
-# 	# 	])
-#     return receipt_audit.name
+    return doclist
+    
+# Check if the document is being saved for the first time
+def on_update(doc, method):
+    if doc.__islocal:  
+        doc.is_first_save = True
+        doc.save()

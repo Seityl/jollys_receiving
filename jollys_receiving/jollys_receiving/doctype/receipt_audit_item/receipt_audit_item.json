@@ -7,23 +7,32 @@
  "engine": "InnoDB",
  "field_order": [
   "item_code",
+  "item_name",
+  "section_break_hhlv",
   "uom",
-  "conversion_rate",
+  "conversion_factor",
+  "column_break_uovm",
   "expected_qty",
   "qty",
-  "description",
-  "from_purchase_receipt"
+  "section_break_fstr",
+  "s_warehouse",
+  "reference_section",
+  "reference_purchase_receipt"
  ],
  "fields": [
   {
+   "columns": 3,
    "fieldname": "item_code",
    "fieldtype": "Link",
+   "in_global_search": 1,
    "in_list_view": 1,
    "label": "Item Code",
    "options": "Item",
+   "print_hide": 1,
    "read_only": 1
   },
   {
+   "columns": 1,
    "fieldname": "uom",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -32,13 +41,7 @@
    "read_only": 1
   },
   {
-   "fieldname": "conversion_rate",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "label": "Conversion Rate",
-   "read_only": 1
-  },
-  {
+   "columns": 2,
    "fieldname": "expected_qty",
    "fieldtype": "Int",
    "in_list_view": 1,
@@ -46,26 +49,63 @@
    "read_only": 1
   },
   {
-   "fieldname": "description",
-   "fieldtype": "Data",
-   "label": "Description"
-  },
-  {
-   "fieldname": "from_purchase_receipt",
-   "fieldtype": "Data",
-   "label": "From Purchase Receipt"
-  },
-  {
+   "columns": 2,
    "fieldname": "qty",
    "fieldtype": "Int",
    "in_list_view": 1,
    "label": "Received QTY"
+  },
+  {
+   "columns": 2,
+   "fieldname": "conversion_factor",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Conversion Factor",
+   "read_only": 1
+  },
+  {
+   "fieldname": "s_warehouse",
+   "fieldtype": "Link",
+   "label": "Source Warehouse",
+   "options": "Warehouse",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reference_section",
+   "fieldtype": "Section Break",
+   "label": "Reference"
+  },
+  {
+   "fieldname": "section_break_hhlv",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_uovm",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_fstr",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "reference_purchase_receipt",
+   "fieldtype": "Data",
+   "label": "Reference Purchase Receipt",
+   "read_only": 1
+  },
+  {
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "in_global_search": 1,
+   "label": "Item Name",
+   "print_hide": 1,
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-09-03 14:07:43.061006",
+ "modified": "2024-09-06 10:19:21.038004",
  "modified_by": "Administrator",
  "module": "Jollys Receiving",
  "name": "Receipt Audit Item",

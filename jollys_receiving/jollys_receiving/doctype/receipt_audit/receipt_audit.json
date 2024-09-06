@@ -3,6 +3,7 @@
  "allow_rename": 1,
  "autoname": "naming_series:naming_series",
  "creation": "2024-08-22 16:19:47.046593",
+ "default_view": "List",
  "doctype": "DocType",
  "document_type": "Document",
  "engine": "InnoDB",
@@ -11,8 +12,10 @@
   "section_break_uz2z",
   "naming_series",
   "amended_from",
-  "purchase_receipt",
-  "section_break_ntct",
+  "is_first_save",
+  "section_break_eeln",
+  "reference_purchase_receipt",
+  "section_break_scanning",
   "scan_code",
   "column_break_ywcc",
   "verify_scan",
@@ -36,12 +39,6 @@
    "search_index": 1
   },
   {
-   "fieldname": "purchase_receipt",
-   "fieldtype": "Link",
-   "label": "Purchase Receipt",
-   "options": "Purchase Receipt"
-  },
-  {
    "fieldname": "naming_series",
    "fieldtype": "Select",
    "hidden": 1,
@@ -60,10 +57,6 @@
    "fieldtype": "Table",
    "label": "Items",
    "options": "Receipt Audit Item"
-  },
-  {
-   "fieldname": "section_break_ntct",
-   "fieldtype": "Section Break"
   },
   {
    "fieldname": "scan_code",
@@ -90,12 +83,34 @@
    "fieldname": "details_tab",
    "fieldtype": "Tab Break",
    "label": "Details"
+  },
+  {
+   "fieldname": "section_break_eeln",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "reference_purchase_receipt",
+   "fieldtype": "Link",
+   "label": "Reference Purchase Receipt",
+   "options": "Purchase Receipt",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_scanning",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_first_save",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "is_virtual": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-09-03 15:10:45.221418",
+ "modified": "2024-09-06 11:23:50.646722",
  "modified_by": "Administrator",
  "module": "Jollys Receiving",
  "name": "Receipt Audit",
@@ -116,8 +131,10 @@
    "write": 1
   }
  ],
+ "search_fields": "reference_purchase_receipt",
  "show_name_in_global_search": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "track_changes": 1
 }
