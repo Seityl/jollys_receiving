@@ -116,7 +116,38 @@ def create_stock_entry(source_name, target_doc=None):
     return doclist
     
 # Check if the document is being saved for the first time
-def on_update(doc, method):
-    if doc.__islocal:  
-        doc.is_first_save = True
-        doc.save()
+# def on_update(doc, method):
+#     if doc.__islocal:  
+#         doc.is_first_save = True
+#         doc.save()
+
+@frappe.whitelist()
+def make_receipt_audit(source_name, target_doc=None):
+	doclist = get_mapped_doc(
+		"Purchase Receipt",
+		source_name,
+		{
+			"Purchase Receipt": {
+				"doctype": "Receipt Audit",
+				 'field_map': {
+                    'name': 'reference_purchase_receipt',
+                }
+			},
+			"Purchase Receipt Item": {
+				"doctype": "Receipt Audit Item",
+				"field_map": {
+					"warehouse": "s_warehouse",
+					"parent": "reference_purchase_receipt",
+					"item_code": "item_code",
+					"item_name": "item_name",
+					"received_qty": "expected_qty",
+					"rejected_qty": "qty",
+					"uom":"uom",
+					"conversion_factor":"conversion_factor"
+				},
+			},
+		},
+		target_doc,
+	)
+
+	return doclist
