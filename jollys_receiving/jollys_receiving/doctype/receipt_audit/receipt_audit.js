@@ -3,6 +3,7 @@
 
 frappe.ui.form.on("Receipt Audit", {
     onload: function(frm) {
+        frm.set_value('scan_code','');
         // Hide Scan Section if document is new and not saved
         //  if (frm.doc.__islocal) {
         //     frm.set_df_property('section_break_scanning', 'hidden', true);
@@ -13,10 +14,10 @@ frappe.ui.form.on("Receipt Audit", {
 
     refresh: function(frm) {
         
-        if (frm.doc.is_first_save) {
-            frm.set_value('is_first_save', false);
-            frm.reload_doc();
-        }
+        // if (frm.doc.is_first_save) {
+        //     frm.set_value('is_first_save', false);
+        //     frm.reload_doc();
+        // }
 
         // Add Stock Entry button under Create if document is submitted
         if (frm.doc.docstatus == 1) {
@@ -116,6 +117,7 @@ function set_item_data_to_dialogue(frm) {
                     'verify_barcode': r.message['verify_barcode'],
                     'verify_item_code': r.message['verify_item_code'],
                     'verify_item_name': r.message['verify_item_name'],
+                    'verify_expected_qty': r.message['verify_expected_qty'],
                     'verify_qty': r.message['verify_qty'],
                     'verify_scan_uom': r.message['verify_scan_uom'],
                     'verify_conversion_factor': r.message['verify_conversion_factor']
@@ -133,27 +135,27 @@ function set_item_data_to_dialogue(frm) {
     });
 }
 
-function freezeBackground() {
-    // Freeze the entire background
-    frappe.dom.freeze('Processing...');
+// function freezeBackground() {
+//     // Freeze the entire background
+//     frappe.dom.freeze('Processing...');
 
-    // Get the dialog element
-    const dialogElement = $('.ui-dialog');
+//     // Get the dialog element
+//     const dialogElement = $('.ui-dialog');
 
-    console.log(dialogElement);
+//     console.log(dialogElement);
 
-    // Apply a higher z-index to ensure the dialog is above the frozen background
-    dialogElement.css('z-index', 99999); // Adjust z-index as needed
+//     // Apply a higher z-index to ensure the dialog is above the frozen background
+//     dialogElement.css('z-index', 99999); // Adjust z-index as needed
 
-    // Additional CSS to make sure dialog stays interactive
-    dialogElement.find('.ui-dialog-content').css('pointer-events', 'auto');
-}
+//     // Additional CSS to make sure dialog stays interactive
+//     dialogElement.find('.ui-dialog-content').css('pointer-events', 'auto');
+// }
 
-// Function to unfreeze the background
-function unfreezeBackground() {
-    // Unfreeze the background
-    frappe.dom.unfreeze();
-}
+// // Function to unfreeze the background
+// function unfreezeBackground() {
+//     // Unfreeze the background
+//     frappe.dom.unfreeze();
+// }
 
 function create_verify_dialogue(data, frm) {
     let d = new frappe.ui.Dialog({
@@ -175,6 +177,12 @@ function create_verify_dialogue(data, frm) {
             label: 'Item Name',
             fieldname: 'verify_item_name',
             fieldtype: 'Data',
+            read_only: 1 
+        },
+        {
+            label: 'Expected QTY',
+            fieldname: 'verify_expected_qty',
+            fieldtype: 'Int',
             read_only: 1 
         },
         {

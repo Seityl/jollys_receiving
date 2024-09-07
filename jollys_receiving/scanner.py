@@ -167,6 +167,7 @@ def get_row_details_from_table(item_table, item_code):
             row_item_code = row.get('item_code') 
 
             if row_item_code == item_code:
+                row_details['expected_qty'] = row.expected_qty
                 row_details['scan_uom'] = row.uom
                 row_details['conversion_factor'] = row.conversion_factor
 
@@ -182,6 +183,7 @@ def get_verify_item_data(receipt_audit_name):
 
         if item_code:        
             item_name = get_item_name_from_barcode(barcode)        
+            expected_qty = get_row_details_from_table(item_table, item_code)['expected_qty']
             qty = 1 
             scan_uom = get_row_details_from_table(item_table, item_code)['scan_uom']
             conversion_factor = get_row_details_from_table(item_table, item_code)['conversion_factor']
@@ -191,6 +193,7 @@ def get_verify_item_data(receipt_audit_name):
                 'verify_barcode': barcode,
                 'verify_item_code': item_code,
                 'verify_item_name': item_name,
+                'verify_expected_qty': expected_qty,
                 'verify_qty': qty,
                 'verify_scan_uom': scan_uom,
                 'verify_conversion_factor': conversion_factor
