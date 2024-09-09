@@ -68,6 +68,7 @@
    "fieldtype": "Link",
    "label": "Source Warehouse",
    "options": "Warehouse",
+   "print_hide": 1,
    "read_only": 1
   },
   {
@@ -91,6 +92,7 @@
    "fieldname": "reference_purchase_receipt",
    "fieldtype": "Data",
    "label": "Reference Purchase Receipt",
+   "print_hide": 1,
    "read_only": 1
   },
   {
@@ -98,17 +100,16 @@
    "fieldtype": "Data",
    "in_global_search": 1,
    "label": "Item Name",
-   "print_hide": 1,
    "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-09-06 10:19:21.038004",
+ "modified": "2024-09-09 14:05:26.405579",
  "modified_by": "Administrator",
  "module": "Jollys Receiving",
- "name": "Receipt Audit Item",
+ "name": "Receiving Item",
  "owner": "Administrator",
  "permissions": [],
  "sort_field": "modified",

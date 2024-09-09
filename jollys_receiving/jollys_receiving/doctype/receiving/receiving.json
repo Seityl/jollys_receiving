@@ -33,7 +33,7 @@
    "fieldtype": "Link",
    "label": "Amended From",
    "no_copy": 1,
-   "options": "Receipt Audit",
+   "options": "Receiving",
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
@@ -45,6 +45,7 @@
    "in_list_view": 1,
    "label": "Naming Series",
    "options": "STO-REC-.YYYY.-",
+   "print_hide": 1,
    "read_only": 1
   },
   {
@@ -56,12 +57,14 @@
    "fieldname": "items",
    "fieldtype": "Table",
    "label": "Items",
-   "options": "Receipt Audit Item"
+   "options": "Receiving Item"
   },
   {
    "fieldname": "scan_code",
    "fieldtype": "Data",
-   "label": "Scan Barcode"
+   "label": "Scan Barcode",
+   "print_hide": 1,
+   "report_hide": 1
   },
   {
    "fieldname": "column_break_ywcc",
@@ -71,7 +74,9 @@
    "default": "0",
    "fieldname": "verify_scan",
    "fieldtype": "Check",
-   "label": "Verify Scan"
+   "label": "Verify Scan",
+   "print_hide": 1,
+   "report_hide": 1
   },
   {
    "fieldname": "connections_tab",
@@ -110,10 +115,10 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-09-06 11:23:50.646722",
+ "modified": "2024-09-09 14:33:56.713743",
  "modified_by": "Administrator",
  "module": "Jollys Receiving",
- "name": "Receipt Audit",
+ "name": "Receiving",
  "naming_rule": "By \"Naming Series\" field",
  "owner": "Administrator",
  "permissions": [

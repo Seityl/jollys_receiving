@@ -1,24 +1,14 @@
 // Copyright (c) 2024, Jollys Pharmacy and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on("Receipt Audit", {
-    onload: function(frm) {
-        frm.set_value('scan_code','');
-        // Hide Scan Section if document is new and not saved
-        //  if (frm.doc.__islocal) {
-        //     frm.set_df_property('section_break_scanning', 'hidden', true);
-        // } else {
-        //     frm.set_df_property('section_break_scanning', 'hidden', false);
-        // }
+frappe.ui.form.on("Receiving", {
+    onload: function(frm, cur_frm) {
+        if(frm.doc.scan_code) {
+            frm.set_value('scan_code','');
+        }
     },
 
     refresh: function(frm) {
-        
-        // if (frm.doc.is_first_save) {
-        //     frm.set_value('is_first_save', false);
-        //     frm.reload_doc();
-        // }
-
         // Add Stock Entry button under Create if document is submitted
         if (frm.doc.docstatus == 1) {
             frm.add_custom_button(
@@ -28,12 +18,7 @@ frappe.ui.form.on("Receipt Audit", {
             );
 
             frm.page.set_inner_btn_group_as_primary(__("Create"));
-
-            // Show Scan Section if document is saved
-            // if (!frm.doc.__islocal) {
-            //     frm.set_df_property('section_break_scanning', 'hidden', false);
-            // }
-
+            
             // Hide verify scan checkbox when document is submitted
             frm.fields_dict['verify_scan'].df.hidden = true;
             frm.refresh_field('verify_scan');
@@ -48,7 +33,7 @@ frappe.ui.form.on("Receipt Audit", {
         if(frm.is_dirty()) {
             frm.save().then(() => {
                 frm.reload_doc();
-            })
+            });
         }
     }
 });
@@ -66,7 +51,7 @@ function scan_barcode(frm) {
                     update_not_verified_item(frm);
                 }
             }
-        })
+        });
     }
 }
 
@@ -77,13 +62,12 @@ function update_not_verified_item(frm) {
             receipt_audit_name: frm.doc.name
         },
         callback: (r) => {
-            // console.log(r.message)
             if(r.message['data']) {
                 if(r.message['status'] === 'success') {
                     frappe.show_alert({
                         message: r.message['message'],
                         indicator:'green'
-                    }, 5);
+                    }, 10);
                 } else {
                     frappe.show_alert({
                         message: r.message['message'],
@@ -134,28 +118,6 @@ function set_item_data_to_dialogue(frm) {
         }
     });
 }
-
-// function freezeBackground() {
-//     // Freeze the entire background
-//     frappe.dom.freeze('Processing...');
-
-//     // Get the dialog element
-//     const dialogElement = $('.ui-dialog');
-
-//     console.log(dialogElement);
-
-//     // Apply a higher z-index to ensure the dialog is above the frozen background
-//     dialogElement.css('z-index', 99999); // Adjust z-index as needed
-
-//     // Additional CSS to make sure dialog stays interactive
-//     dialogElement.find('.ui-dialog-content').css('pointer-events', 'auto');
-// }
-
-// // Function to unfreeze the background
-// function unfreezeBackground() {
-//     // Unfreeze the background
-//     frappe.dom.unfreeze();
-// }
 
 function create_verify_dialogue(data, frm) {
     let d = new frappe.ui.Dialog({
@@ -284,6 +246,10 @@ function create_verify_dialogue(data, frm) {
                                             indicator:'green'
                                         }, 5);
                                     } else {
+                                        frappe.show_alert({
+                                            message: r.message['message'],
+                                            indicator:'red'
+                                        }, 10);
                                         frappe.call({
                                             method: 'jollys_receiving.api.update_row_conversion_factor_by_item_code_code',
                                             args: {
@@ -318,11 +284,7 @@ function create_verify_dialogue(data, frm) {
         }
     }   
     d.show();
-    // freezeBackground();
-    // d.get_close_btn().toggle(false);
-    // frappe.dom.freeze();
 }
-
 
 cur_frm.cscript["Stock Entry"] = function() {
     frappe.model.open_mapped_doc({

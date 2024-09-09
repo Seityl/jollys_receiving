@@ -68,7 +68,7 @@ def update_item_uom_conversion_factor(item_code, uom, conversion_factor):
 @frappe.whitelist()
 def update_row_conversion_factor_by_item_code_code(receipt_audit_name, item_code):
     try:
-        receipt_audit = frappe.get_doc('Receipt Audit', receipt_audit_name)
+        receipt_audit = frappe.get_doc('Receiving', receipt_audit_name)
         item_table = receipt_audit.items
         
         update_row_conversion_factor_by_item_code(receipt_audit, item_table, item_code)
@@ -84,20 +84,18 @@ def create_stock_entry(source_name, target_doc=None):
     def set_missing_values(source, target):
         target.stock_entry_type = "Material Transfer"
         target.purpose = "Material Transfer"
-        target.to_warehouse = 'Mega Stock - JP'
-        target.from_warehouse = 'Port Location - JP'
-        # target.purchase_receipt_no = 'MAT-PRE-2024-00008'
-        target.save()
+        target.to_warehouse = 'Mega Stock - JP' # Default target warehouse
+        target.from_warehouse = 'Port Location - JP' # Default source warehouse
         target.set_missing_values()
 
     doclist = get_mapped_doc(
-		'Receipt Audit',
+		'Receiving',
 		source_name,
 		{
-			'Receipt Audit': {
+			'Receiving': {
 				'doctype': 'Stock Entry',
 			},
-			'Receipt Audit Item': {
+			'Receiving Item': {
 				'doctype': 'Stock Entry Detail',
 				"field_map": {
 					"warehouse": "s_warehouse",
@@ -115,12 +113,6 @@ def create_stock_entry(source_name, target_doc=None):
     
     return doclist
     
-# Check if the document is being saved for the first time
-# def on_update(doc, method):
-#     if doc.__islocal:  
-#         doc.is_first_save = True
-#         doc.save()
-
 @frappe.whitelist()
 def make_receipt_audit(source_name, target_doc=None):
 	doclist = get_mapped_doc(
@@ -128,13 +120,13 @@ def make_receipt_audit(source_name, target_doc=None):
 		source_name,
 		{
 			"Purchase Receipt": {
-				"doctype": "Receipt Audit",
+				"doctype": "Receiving",
 				 'field_map': {
                     'name': 'reference_purchase_receipt',
                 }
 			},
 			"Purchase Receipt Item": {
-				"doctype": "Receipt Audit Item",
+				"doctype": "Receiving Item",
 				"field_map": {
 					"warehouse": "s_warehouse",
 					"parent": "reference_purchase_receipt",

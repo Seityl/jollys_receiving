@@ -9,12 +9,16 @@ def update_uom_conversion_factor(item_code, uom, conversion_factor):
             if item.uoms[i].uom == uom:
                 item.uoms[i].conversion_factor = conversion_factor
 
-        item.save()
-        frappe.db.commit()
+                item.save()
+                frappe.db.commit()
 
+                return {
+                    'status': 'success',
+                    'message': f'{item_code} Conversion Factor changed to: {conversion_factor}'
+                }
         return {
-            'status': 'success',
-            'message': f'{item_code} Conversion Factor changed to: {conversion_factor}'
+            'status': 'error',
+            'message': f'Error: Could not update Conversion Factor<br><br>UOM "{uom}" does not exist under item: {item_code}'
         }
 
     except Exception as e:
@@ -24,7 +28,7 @@ def update_uom_conversion_factor(item_code, uom, conversion_factor):
         }
 
 def update_not_verified_scan(receipt_audit_name):
-    receipt_audit = frappe.get_doc('Receipt Audit', receipt_audit_name)
+    receipt_audit = frappe.get_doc('Receiving', receipt_audit_name)
     item_table = receipt_audit.items
     barcode = receipt_audit.get('scan_code')
     item_code = get_item_code_from_barcode(barcode)     
@@ -64,7 +68,7 @@ def update_verified_scan(
     ):
 
     try:
-        receipt_audit = frappe.get_doc('Receipt Audit', receipt_audit_name)
+        receipt_audit = frappe.get_doc('Receiving', receipt_audit_name)
         item_table = receipt_audit.items
 
         # update_item_by_item_code(
@@ -174,7 +178,7 @@ def get_row_details_from_table(item_table, item_code):
                 return row_details
 
 def get_verify_item_data(receipt_audit_name):
-    receipt_audit = frappe.get_doc('Receipt Audit', receipt_audit_name)
+    receipt_audit = frappe.get_doc('Receiving', receipt_audit_name)
     item_table = receipt_audit.items
 
     try:
