@@ -2,18 +2,7 @@ import frappe
 from frappe import _
 from typing import Optional, Union
 from frappe.model.mapper import get_mapped_doc
-from .scanner import update_row_conversion_factor_by_item_code, update_not_verified_scan, get_verify_item_data, update_verified_scan, update_uom_conversion_factor
-
-@frappe.whitelist()
-def update_not_verified_item(receipt_audit_name):
-    try:
-        return update_not_verified_scan(receipt_audit_name)
-
-    except Exception as e:
-        return {
-            'status': 'error',
-            'message': f'An unexpected error occurred: {str(e)}'
-        }
+from .scanner import update_row_conversion_factor_by_item_code, update_not_verified_scan, get_verify_item_data, update_verified_scan, update_uom_conversion_factor, get_received_qty_from_row
 
 @frappe.whitelist()
 def fetch_item_data(receipt_audit_name):
@@ -27,9 +16,19 @@ def fetch_item_data(receipt_audit_name):
         }
 
 @frappe.whitelist()
+def update_not_verified_item(receipt_audit_name):
+    try:
+        return update_not_verified_scan(receipt_audit_name)
+
+    except Exception as e:
+        return {
+            'status': 'error',
+            'message': f'An unexpected error occurred: {str(e)}'
+        }
+
+@frappe.whitelist()
 def update_verified_item(
     	receipt_audit_name,
-        verify_barcode, 
         verify_item_code,
         verify_item_name,
         verify_qty: int = None, 
@@ -40,7 +39,6 @@ def update_verified_item(
     try:
         return update_verified_scan(
             receipt_audit_name,
-            verify_barcode,
             verify_item_code,
             verify_item_name,
             verify_qty=verify_qty,
@@ -143,3 +141,7 @@ def make_receipt_audit(source_name, target_doc=None):
 	)
 
 	return doclist
+
+@frappe.whitelist()
+def fetch_received_qty_from_row(receipt_audit_name,item_code):
+    return get_received_qty_from_row(receipt_audit_name, item_code)

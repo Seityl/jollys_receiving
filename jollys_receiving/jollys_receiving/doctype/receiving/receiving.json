@@ -96,6 +96,8 @@
   {
    "fieldname": "reference_purchase_receipt",
    "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Reference Purchase Receipt",
    "options": "Purchase Receipt",
    "read_only": 1
@@ -115,7 +117,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-09-09 14:33:56.713743",
+ "modified": "2024-09-14 08:56:58.054905",
  "modified_by": "Administrator",
  "module": "Jollys Receiving",
  "name": "Receiving",
