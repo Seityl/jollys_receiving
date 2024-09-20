@@ -1,6 +1,45 @@
 import frappe
 from frappe import _
 
+def is_item_code_in_table(item_code, item_table):
+    for row in item_table:
+        row_item_code = row.get('item_code') 
+
+        if row_item_code == item_code:
+            return True
+
+    return False
+
+def update_expiration_dates_by_item_code(
+        item_code,
+        expiration_date_1=None,
+        expiration_date_2=None,
+        expiration_date_3=None,
+        expiration_date_4=None,
+        expiration_date_5=None,
+    ):
+    item = frappe.get_doc('Item', item_code)
+
+    try:    
+        item.custom_expiration_date_1 = expiration_date_1 
+        item.custom_expiration_date_2 = expiration_date_2 
+        item.custom_expiration_date_3 = expiration_date_3 
+        item.custom_expiration_date_4 = expiration_date_4 
+        item.custom_expiration_date_5 = expiration_date_5
+        item.save()
+        frappe.db.commit()
+
+        return{
+            'status': 'success',
+            'message': f'Updated expiration dates of {item_code}'
+        } 
+
+    except Exception as e:
+        return {
+            'status': 'error',
+            'message': f'Something went wrong: {e}'
+        }
+        
 def update_uom_conversion_factor(item_code, uom, conversion_factor):
     try:    
         item = frappe.get_doc('Item', item_code)
@@ -62,15 +101,6 @@ def update_not_verified_scan(receipt_audit_name):
             'status': 'error',
             'message': f'Barcode: \'{barcode}\' is invalid'
         }
-
-def is_item_code_in_table(item_code, item_table):
-    for row in item_table:
-        row_item_code = row.get('item_code') 
-
-        if row_item_code == item_code:
-            return True
-
-    return False
 
 def update_verified_scan(
         receipt_audit_name,
@@ -138,7 +168,7 @@ def update_item_by_item_code(
                 if row_item_code == item_code:
                     if verify_scan_qty:
                         if not row_qty:
-                                row.qty = verify_scan_qty
+                            row.qty = verify_scan_qty
                             
                         else:
                             row_qty += verify_scan_qty
@@ -215,6 +245,7 @@ def get_verify_item_data(receipt_audit_name):
             qty = None 
             scan_uom = get_row_details_from_table(item_table, item_code)['scan_uom']
             conversion_factor = get_row_details_from_table(item_table, item_code)['conversion_factor']
+            received_qty = get_row_details_from_table(item_table, item_code)['received_qty']
 
             data = {
                 'status': 'success',
@@ -222,6 +253,7 @@ def get_verify_item_data(receipt_audit_name):
                 'verify_item_code': item_code,
                 'verify_item_name': f'{item_code}: {item_name}',
                 'verify_expected_qty': expected_qty,
+                'verify_received_qty': received_qty,
                 'verify_qty': qty,
                 'verify_scan_uom': scan_uom,
                 'verify_conversion_factor': conversion_factor
@@ -271,6 +303,47 @@ def get_item_name_from_barcode(barcode):
     except Exception as e:
         frappe.msgprint(f'Invalid Barcode. Please try again.{e}')      
         return None
+
+def get_expiration_dates_by_item_code(item_code):
+    try:    
+        expiration_dates = frappe.get_all('Item',
+            filters={'item_code': item_code},
+            fields=[
+                'custom_expiration_date_1', 
+                'custom_expiration_date_2', 
+                'custom_expiration_date_3',
+                'custom_expiration_date_4',
+                'custom_expiration_date_5',
+            ],
+            as_list=True
+        )[0]
+        
+        if expiration_dates:
+            return{
+                'status': 'success',
+                'message': {
+                    'expiration_date_1': expiration_dates[0], 
+                    'expiration_date_2': expiration_dates[1], 
+                    'expiration_date_3': expiration_dates[2],
+                    'expiration_date_4': expiration_dates[3],
+                    'expiration_date_5': expiration_dates[4],    
+                }
+            }
+
+        return {
+            'status': 'success',
+            'expiration_date_1': None, 
+            'expiration_date_2': None, 
+            'expiration_date_3': None,
+            'expiration_date_4': None,
+            'expiration_date_5': None,
+        }
+
+    except Exception as e:
+        return {
+            'status': 'error',
+            'message': f'Something went wrong: {e}'
+        }
 
 def clear_barcode_field(receipt_audit):
     receipt_audit.scan_code = ''

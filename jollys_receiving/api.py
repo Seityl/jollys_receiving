@@ -2,12 +2,59 @@ import frappe
 from frappe import _
 from typing import Optional, Union
 from frappe.model.mapper import get_mapped_doc
-from .scanner import update_row_conversion_factor_by_item_code, update_not_verified_scan, get_verify_item_data, update_verified_scan, update_uom_conversion_factor, get_received_qty_from_row
+from .scanner import update_row_conversion_factor_by_item_code, update_not_verified_scan, get_verify_item_data, update_verified_scan, update_uom_conversion_factor, get_received_qty_from_row, get_expiration_dates_by_item_code, update_expiration_dates_by_item_code
 
+@frappe.whitelist()
+def fetch_expiration_dates(item_code):
+    try:
+        return get_expiration_dates_by_item_code(item_code)
+
+    except Exception as e:
+        return {
+            'status': 'error',
+            'message': f'An unexpected error occurred: {str(e)}'
+        }
+
+@frappe.whitelist()
+def fetch_received_qty_from_row(receipt_audit_name, item_code):
+    try:
+        return get_received_qty_from_row(receipt_audit_name, item_code)
+
+    except Exception as e:
+        return {
+            'status': 'error',
+            'message': f'An unexpected error occurred: {str(e)}'
+        }
+    
 @frappe.whitelist()
 def fetch_item_data(receipt_audit_name):
     try:
         return get_verify_item_data(receipt_audit_name)
+
+    except Exception as e:
+        return {
+            'status': 'error',
+            'message': f'An unexpected error occurred: {str(e)}'
+        }
+
+@frappe.whitelist()
+def update_expiration_dates(
+    item_code,
+    expiration_date_1=None,
+    expiration_date_2=None,
+    expiration_date_3=None,
+    expiration_date_4=None,
+    expiration_date_5=None,
+):
+    try:
+        return update_expiration_dates_by_item_code(
+            item_code,
+            expiration_date_1=expiration_date_1,
+            expiration_date_2=expiration_date_2,
+            expiration_date_3=expiration_date_3,
+            expiration_date_4=expiration_date_4,
+            expiration_date_5=expiration_date_5,
+        )
 
     except Exception as e:
         return {
@@ -141,7 +188,3 @@ def make_receipt_audit(source_name, target_doc=None):
 	)
 
 	return doclist
-
-@frappe.whitelist()
-def fetch_received_qty_from_row(receipt_audit_name,item_code):
-    return get_received_qty_from_row(receipt_audit_name, item_code)

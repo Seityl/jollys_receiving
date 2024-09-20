@@ -97,6 +97,7 @@ function update_verified_item(frm) {
                     'verify_item_code': r.message['verify_item_code'],
                     'verify_item_name': r.message['verify_item_name'],
                     'verify_expected_qty': r.message['verify_expected_qty'],
+                    'verify_received_qty': r.message['verify_received_qty'],
                     'verify_qty': r.message['verify_qty'],
                     'verify_scan_uom': r.message['verify_scan_uom'],
                     'verify_conversion_factor': r.message['verify_conversion_factor']
@@ -164,7 +165,7 @@ function update_row(frm, values, data) {
                     }, 10);
                 }
 
-                if(values['verify_conversion_factor'] != data['verify_conversion_factor']){
+                if(values['verify_conversion_factor'] != data['verify_conversion_factor']) {
                     frappe.call({
                         method: 'jollys_receiving.api.update_item_uom_conversion_factor',
                         args: {
@@ -215,36 +216,52 @@ function create_verify_dialogue(data, frm) {
         title: '<b>Scan Details</b>',
         fields: 
         [{
-            label: '<b>Item Code</b>',
+            label: 'Item Code',
             fieldname: 'verify_item_code',
             fieldtype: 'Data',
             read_only: 1, 
             hidden: 1
         },
         {
-            label: '<b>Item Code / Name</b>',
+            label: 'Item Code / Name',
             fieldname: 'verify_item_name',
             fieldtype: 'Data',
             read_only: 1, 
         },
         {
-            label: '<b>Expected QTY</b> <i>(Total Count Expected To Be Received)</i>',
+            label: 'Expected QTY <i>(QTY Expected To Be Received)</i>',
             fieldname: 'verify_expected_qty',
             fieldtype: 'Int',
             read_only: 1 
         },
         {
-            label: '<b>Scan QTY</b> <i>(Count Received With This Scan)</i>',
+            label: 'Received QTY <i>(QTY Already Counted)</i>',
+            fieldname: 'verify_received_qty',
+            fieldtype: 'Int',
+            read_only: 1 
+        },
+        {
+            label: '<b>Scan QTY</b> <i>(QTY Counted With This Scan)</i>',
             fieldname: 'verify_qty',
             fieldtype: 'Int',
             reqd: 1,
         },
         {
-            label: '<b>UOM</b>',
+            label: '',
+            fieldname: 'section_uom',
+            fieldtype: 'Section Break',
+        },
+        {
+            label: 'UOM',
             fieldname: 'verify_scan_uom',
             fieldtype: 'Link',
             options: 'UOM',
             read_only: 1 
+        },
+        {
+            label: '',
+            fieldname: 'column_break1',
+            fieldtype: 'Column Break',
         },
         {
             label: '<b>UOM Conversion Factor</b>',
@@ -254,12 +271,17 @@ function create_verify_dialogue(data, frm) {
             read_only: 1 
         },
         {
+            label: '',
+            fieldname: 'section_edit',
+            fieldtype: 'Section Break',
+        },
+        {
             label: '<b>Edit Conversion Factor</b>',
             fieldname: 'change_conversion_factor',
             fieldtype: 'Button',
-            click: function(){
+            click: function() {
                 let field = d.fields_dict['verify_conversion_factor'];
-
+                
                 frappe.confirm(
                     'Selecting "Yes" will enable the editing of the Conversion Factor.<br>Selecting "No" will disable the editing of the Conversion Factor.<br><br>Are you certain you wish to proceed?',
                     () => {
@@ -270,6 +292,46 @@ function create_verify_dialogue(data, frm) {
                         field.refresh();
                     }
                 );
+            }
+        },
+        {
+            label: '',
+            fieldname: 'column_break1',
+            fieldtype: 'Column Break',
+        },
+        {
+            label: '<b>Edit Expiration Dates</b>',
+            fieldname: 'edit_expiration_dates',
+            fieldtype: 'Button',
+            click: function() {
+                let item_code = d.fields_dict['verify_item_code'].value;
+                let item_name = d.fields_dict['verify_item_name'].value;
+
+                frappe.call({
+                    method: 'jollys_receiving.api.fetch_expiration_dates',
+                    args: {
+                        item_code: item_code
+                    },
+                    callback: (r) => {
+                        if(r.message['status'] === 'success') {
+                            d.hide(); // Hides verify dialog 
+                            data = {
+                                'expiration_item_code': item_code,
+                                'expiration_date_1': r.message['message']['expiration_date_1'], 
+                                'expiration_date_2': r.message['message']['expiration_date_2'],
+                                'expiration_date_3': r.message['message']['expiration_date_3'],
+                                'expiration_date_4': r.message['message']['expiration_date_4'],
+                                'expiration_date_5': r.message['message']['expiration_date_5']
+                            };        
+                            expiration_dialog = create_expiration_dates_dialog(data, d, item_name);
+                        } else {
+                            frappe.show_alert({
+                                message: r.message['message'],
+                                indicator:'red'
+                            }, 5);
+                        }
+                    }
+                });
             }
         }],
         size: 'small',
@@ -301,8 +363,111 @@ function create_verify_dialogue(data, frm) {
             d.set_value(fieldname, data[fieldname]);
         }
     }   
-    // Makes change_conversion_factor button red
+    // Makes change_conversion_factor button reddy.find('button[data-fieldname="change_conversion_factor"]').addClass('btn-danger');
     d.$body.find('button[data-fieldname="change_conversion_factor"]').addClass('btn-danger');
+    // Makes edit_expiration_dates button red
+    d.$body.find('button[data-fieldname="edit_expiration_dates"]').addClass('btn-danger');
+    
+    d.show();
+}
+
+function create_expiration_dates_dialog(data, verify_dialog, item_name) {
+    let d = new frappe.ui.Dialog({
+        title: '<b>Edit Expiration Dates</b>',
+        fields: 
+        [{
+            label: 'Item Code',
+            fieldname: 'expiration_item_code',
+            fieldtype: 'Data',
+            read_only: 1, 
+            hidden: 1
+        },
+        {
+            label: '<b>Expiration Date 1</b>',
+            fieldname: 'expiration_date_1',
+            fieldtype: 'Date',
+        },
+        {
+            label: '<b>Expiration Date 2</b>',
+            fieldname: 'expiration_date_2',
+            fieldtype: 'Date',
+        },
+        {
+            label: '<b>Expiration Date 3</b>',
+            fieldname: 'expiration_date_3',
+            fieldtype: 'Date',
+        },
+        {
+            label: '<b>Expiration Date 4</b>',
+            fieldname: 'expiration_date_4',
+            fieldtype: 'Date',
+        },
+        {
+            label: '<b>Expiration Date 5</b>',
+            fieldname: 'expiration_date_5',
+            fieldtype: 'Date',
+        },
+        {
+            label: '',
+            fieldname: 'section_cancel',
+            fieldtype: 'Section Break',
+        },
+        {
+            label: '<b>Cancel Edit</b>',
+            fieldname: 'cancel_edit',
+            fieldtype: 'Button',
+            click: function() {
+                d.hide(); // Hides expiration date dialog
+                verify_dialog.show(); // Shows verify dialog
+            }
+        }],
+        size: 'small',
+        primary_action_label: '<b>Update Expiration Dates</b>',
+        primary_action(values) {
+            frappe.confirm(
+                `These expiration dates will be set for item<br><br>${item_name}<br><br>Are you sure you want to proceed?`,
+                () => {
+                    frappe.call({
+                        method: 'jollys_receiving.api.update_expiration_dates',
+                        args: {
+                            item_code: values['expiration_item_code'],
+                            expiration_date_1: values['expiration_date_1'],
+                            expiration_date_2: values['expiration_date_2'],
+                            expiration_date_3: values['expiration_date_3'],
+                            expiration_date_4: values['expiration_date_4'],
+                            expiration_date_5: values['expiration_date_5'],
+                        },
+                        callback: (r) => {
+                            if(r.message['status'] === 'success') {
+                                frappe.show_alert({
+                                    message: r.message['message'],
+                                    indicator:'green'
+                                }, 5);
+                            } else {
+                                frappe.show_alert({
+                                    message: r.message['message'],
+                                    indicator:'red'
+                                }, 10);
+                            }
+                        }
+                    })
+
+                    d.hide(); // Hides expiration date dialog
+                    verify_dialog.show(); // Shows verify dialog
+                },
+                () => {
+                    // Closes the confirmation dialog if 'no' is selected
+                }
+            );
+        }
+    });
+    for (const fieldname in data) {
+        if (data.hasOwnProperty(fieldname)) {
+            d.set_value(fieldname, data[fieldname]);
+        }
+    }   
+    // Makes cancel_edit button red
+    d.$body.find('button[data-fieldname="cancel_edit"]').addClass('btn-danger');
     d.show();
 }
 
