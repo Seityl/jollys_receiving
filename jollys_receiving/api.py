@@ -168,6 +168,8 @@ def make_receipt_audit(source_name, target_doc=None):
 				"doctype": "Receiving",
 				 'field_map': {
                     'name': 'reference_purchase_receipt',
+                    "supplier":"supplier",
+					"supplier_name":"supplier_name"
                 }
 			},
 			"Purchase Receipt Item": {
@@ -180,7 +182,7 @@ def make_receipt_audit(source_name, target_doc=None):
 					"received_qty": "expected_qty",
 					"rejected_qty": "qty",
 					"uom":"uom",
-					"conversion_factor":"conversion_factor"
+					"conversion_factor":"conversion_factor",
 				},
 			},
 		},

@@ -1,7 +1,8 @@
 {
  "actions": [],
- "autoname": "naming_series:naming_series",
- "creation": "2024-08-22 16:19:47.046593",
+ "allow_import": 1,
+ "autoname": "format:{supplier_name}-{reference_purchase_receipt}",
+ "creation": "2024-09-21 11:41:31.148586",
  "default_view": "List",
  "doctype": "DocType",
  "document_type": "Document",
@@ -11,9 +12,12 @@
   "section_break_uz2z",
   "naming_series",
   "amended_from",
-  "is_first_save",
   "section_break_eeln",
   "reference_purchase_receipt",
+  "customs_entry",
+  "column_break_ogtb",
+  "supplier",
+  "supplier_name",
   "section_break_scanning",
   "scan_code",
   "column_break_ywcc",
@@ -24,8 +28,22 @@
  ],
  "fields": [
   {
+   "fieldname": "details_tab",
+   "fieldtype": "Tab Break",
+   "label": "Details"
+  },
+  {
    "fieldname": "section_break_uz2z",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Naming Series",
+   "options": "SUP-{supplier}-PR-.YYYY.MM.DD.-.#####",
+   "print_hide": 1,
+   "read_only": 1
   },
   {
    "fieldname": "amended_from",
@@ -38,25 +56,32 @@
    "search_index": 1
   },
   {
-   "fieldname": "naming_series",
-   "fieldtype": "Select",
-   "hidden": 1,
-   "in_list_view": 1,
-   "label": "Naming Series",
-   "options": "STO-REC-.YYYY.-",
-   "print_hide": 1,
-   "read_only": 1
-  },
-  {
-   "fieldname": "section_break_rryl",
+   "fieldname": "section_break_eeln",
    "fieldtype": "Section Break"
   },
   {
-   "allow_bulk_edit": 1,
-   "fieldname": "items",
-   "fieldtype": "Table",
-   "label": "Items",
-   "options": "Receiving Item"
+   "fieldname": "supplier",
+   "fieldtype": "Link",
+   "label": "Supplier",
+   "options": "Supplier"
+  },
+  {
+   "fieldname": "column_break_ogtb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "reference_purchase_receipt",
+   "fieldtype": "Link",
+   "in_global_search": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Reference Purchase Receipt",
+   "options": "Purchase Receipt",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_scanning",
+   "fieldtype": "Section Break"
   },
   {
    "fieldname": "scan_code",
@@ -78,49 +103,58 @@
    "report_hide": 1
   },
   {
+   "fieldname": "section_break_rryl",
+   "fieldtype": "Section Break"
+  },
+  {
+   "allow_bulk_edit": 1,
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "options": "Receiving Item"
+  },
+  {
    "fieldname": "connections_tab",
    "fieldtype": "Tab Break",
    "label": "Connections",
    "show_dashboard": 1
   },
   {
-   "fieldname": "details_tab",
-   "fieldtype": "Tab Break",
-   "label": "Details"
-  },
-  {
-   "fieldname": "section_break_eeln",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "reference_purchase_receipt",
+   "fieldname": "amended_from",
    "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Receiving",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "supplier_name",
+   "fieldtype": "Data",
+   "in_global_search": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Reference Purchase Receipt",
-   "options": "Purchase Receipt",
-   "read_only": 1
+   "label": "Supplier's Name"
   },
   {
-   "fieldname": "section_break_scanning",
-   "fieldtype": "Section Break"
-  },
-  {
-   "default": "0",
-   "fieldname": "is_first_save",
-   "fieldtype": "Check",
-   "hidden": 1,
-   "is_virtual": 1
+   "fieldname": "customs_entry",
+   "fieldtype": "Link",
+   "in_global_search": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Customs Entry",
+   "options": "Customs Entry"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-09-14 12:31:14.104787",
+ "modified": "2024-09-26 09:50:08.936582",
  "modified_by": "Administrator",
  "module": "Jollys Receiving",
  "name": "Receiving",
- "naming_rule": "By \"Naming Series\" field",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {
@@ -162,7 +196,7 @@
    "write": 1
   }
  ],
- "search_fields": "reference_purchase_receipt",
+ "search_fields": "reference_purchase_receipt,supplier_name,customs_entry",
  "show_name_in_global_search": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
