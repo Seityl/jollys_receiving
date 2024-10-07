@@ -3,38 +3,82 @@
 
 frappe.ui.form.on('Receiving', {
     onload: function(frm) {
+        if(frm.is_new()) {
+            frappe.call({
+                method: 'jollys_receiving.api.fetch_customs_entry',
+                freeze: true,
+                freeze_message: 'Fetching Customs Entry...',
+                args: {
+                    purchase_receipt_name: frm.doc.reference_purchase_receipt
+                },
+                callback: (r) => {
+                    if(r.message['status'] == 'success') {
+                        frm.set_value('customs_entry', r.message['message']);
+                    } else {
+                        frappe.show_alert({
+                            message: r.message['message'],
+                            indicator:'red'
+                        }, 5);
+                    }
+                }
+            });
+        }
         if(frm.doc.scan_code) {
             frm.set_value('scan_code','');
         }
+        if(frm.doc.docstatus == 1) {
+            // Hide verify scan checkbox when document is submitted
+            frm.fields_dict['verify_scan'].df.hidden = true;
+            frm.refresh_field('verify_scan');
+            // Hide scan mode button when document is submitted
+            // frm.fields_dict['continuous_scan'].df.hidden = true;
+            // frm.refresh_field('continuous_scan');            
+            // Hide scan box when document is submitted
+            frm.fields_dict['scan_code'].df.hidden = true;
+            frm.refresh_field('scan_code');            
+            // Add button to create Stock Entry from receiving when document is submitted
+        }
     },
-
     refresh: function(frm) {
-        // Add Stock Entry button under Create if document is submitted
-        if (frm.doc.docstatus == 1) {
+        if(frm.doc.docstatus == 1) {
             frm.add_custom_button(
                 __('Stock Entry'),
                 frm.cscript['Stock Entry'],
                 __('Create')
             );
             frm.page.set_inner_btn_group_as_primary(__('Create'));
-            // Hide verify scan checkbox when document is submitted
-            frm.fields_dict['verify_scan'].df.hidden = true;
-            frm.refresh_field('verify_scan');
         }
     },
-
     scan_code: function(frm) {
         scan_barcode(frm);   
     },
-
     verify_scan: function(frm) {
         if(frm.is_dirty()) {
             frm.save().then(() => {
                 frm.reload_doc();
             });
         }
-    }
+    },
 });
+
+// frappe.ui.form.on("[Receiving]", "[continuous_scan]", function(frm) { 
+//    console.log('hi'); 
+//     let d = new frappe.ui.Dialog({
+//         title: '<b>Scan Mode</b>',
+//         fields: 
+//         [{
+//             label: 'Scan Barcode',
+//             fieldname: 'scan_barcode',
+//             fieldtype: 'Data',
+//         }],
+//         size: 'small',
+//         primary_action_label: '<b>Exit</b>',
+//         primary_action(values) {
+//             d.hide()
+//         }
+//     });
+//     d.show();
+// });
 
 // Data of verify scan dialog
 let data = {};
@@ -44,13 +88,36 @@ function scan_barcode(frm) {
         frm.save().then(() => {
             if(frm.doc.scan_code) {
                 if(frm.doc.verify_scan) {
-                    update_verified_item(frm);
+                    update_verified_item(frm).then(() => {
+                        update_received_percentage(frm);
+                    });
                 } else {
-                    update_not_verified_item(frm);
+                    update_not_verified_item(frm).then(() => {
+                        update_received_percentage(frm);
+                    });
                 }
             }
         });
     }
+}
+
+function update_received_percentage(frm) {
+    frappe.call({
+        method: 'jollys_receiving.api.update_received_percentage',
+        args: {
+            receiving_name: frm.doc.name
+        },
+        callback: (r) => {
+            if(r.message['status'] == 'error') {
+                frappe.show_alert({
+                    message: r.message['message'],
+                    indicator:'red'
+                }, 5);
+            } else {
+                frm.refresh_field('per_received');
+            }
+        }
+    });
 }
 
 function update_not_verified_item(frm) {
@@ -66,6 +133,7 @@ function update_not_verified_item(frm) {
                         message: r.message['message'],
                         indicator:'green'
                     }, 10);
+                    update_received_percentage(frm);
                 } else {
                     frappe.show_alert({
                         message: r.message['message'],
@@ -78,9 +146,8 @@ function update_not_verified_item(frm) {
                     indicator:'red'
                 }, 5);
             }
-            frm.reload_doc();
         }
-    })
+    });
 }
 
 function update_verified_item(frm) {
@@ -165,6 +232,8 @@ function update_row(frm, values, data) {
                     }, 10);
                 }
 
+                update_received_percentage(frm);
+                
                 if(values['verify_conversion_factor'] != data['verify_conversion_factor']) {
                     frappe.call({
                         method: 'jollys_receiving.api.update_item_uom_conversion_factor',
@@ -291,7 +360,7 @@ function create_verify_dialogue(data, frm) {
                         field.df.read_only = 1; 
                         field.refresh();
                     }
-                );
+                );    
             }
         },
         {

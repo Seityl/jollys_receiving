@@ -1,0 +1,15 @@
+[
+    {
+        "doctype": "Custom Field",
+        "dt": "Stock Entry",
+        "module": "jollys_receiving",
+        "name": "Stock Entry-reference_receiving",
+        "fieldname": "custom_reference_receiving",
+        "fieldtype": "Link",
+        "label": "Reference Receiving",
+        "hidden": 1,
+        "print_hide": 1,
+        "read_only": 1,
+        "insert_after": "purchase_receipt_no"
+    }
+]

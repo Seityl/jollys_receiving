@@ -2,7 +2,30 @@ import frappe
 from frappe import _
 from typing import Optional, Union
 from frappe.model.mapper import get_mapped_doc
-from .scanner import update_row_conversion_factor_by_item_code, update_not_verified_scan, get_verify_item_data, update_verified_scan, update_uom_conversion_factor, get_received_qty_from_row, get_expiration_dates_by_item_code, update_expiration_dates_by_item_code
+from .scanner import update_row_conversion_factor_by_item_code, update_not_verified_scan, get_verify_item_data, update_verified_scan, update_uom_conversion_factor, get_received_qty_from_row, get_expiration_dates_by_item_code, update_expiration_dates_by_item_code, update_per_received
+
+@frappe.whitelist()
+def fetch_customs_entry(purchase_receipt_name):
+    customs_entries = frappe.db.get_all('Customs Entry', fields=['name'])
+
+    for customs_entry in customs_entries:
+        current_doc = frappe.get_doc('Customs Entry', customs_entry)
+        consolidation_table = current_doc.consolidation
+
+        if consolidation_table:
+            for row in consolidation_table:
+                if(row.reference_doctype == 'Purchase Receipt' and row.reference_document == purchase_receipt_name):
+                    return {
+                        'status':'success',
+                        'message': current_doc.name
+                    } 
+
+        continue
+
+    return {
+        'status':'error',
+        'message': 'No associated customs entry found for this purchase receipt'
+    } 
 
 @frappe.whitelist()
 def fetch_expiration_dates(item_code):
@@ -125,10 +148,24 @@ def update_row_conversion_factor_by_item_code_code(receipt_audit_name, item_code
         }
 
 @frappe.whitelist()
+def update_received_percentage(receiving_name):
+    try:
+        receiving = frappe.get_doc('Receiving', receiving_name)
+        item_table = receiving.items
+        
+        update_per_received(receiving, item_table)
+
+    except Exception as e:
+        return {
+            'status': 'error',
+            'message': f'An unexpected error occurred: {str(e)}'
+        }
+
+@frappe.whitelist()
 def create_stock_entry(source_name, target_doc=None):
     def set_missing_values(source, target):
-        target.stock_entry_type = "Material Transfer"
-        target.purpose = "Material Transfer"
+        target.stock_entry_type = 'Material Transfer'
+        target.purpose = 'Material Transfer'
         target.to_warehouse = 'Mega Stock - JP' # Default target warehouse
         target.from_warehouse = 'Port Location - JP' # Default source warehouse
         target.set_missing_values()
@@ -139,16 +176,19 @@ def create_stock_entry(source_name, target_doc=None):
 		{
 			'Receiving': {
 				'doctype': 'Stock Entry',
+                'field_map': {
+                    'name': 'custom_reference_receiving'
+                }
 			},
 			'Receiving Item': {
 				'doctype': 'Stock Entry Detail',
-				"field_map": {
-					"warehouse": "s_warehouse",
-					"reference_purchase_receipt": "reference_purchase_receipt",
-                    "qty": "qty",
-                    "item_code": "item_code",
-                    "uom":"uom",
-                    "conversion_factor":"conversion_factor"
+				'field_map': {
+					'warehouse': 's_warehouse',
+					'reference_purchase_receipt': 'reference_purchase_receipt',
+                    'qty': 'qty',
+                    'item_code': 'item_code',
+                    'uom':'uom',
+                    'conversion_factor':'conversion_factor'
 				},
 			},
 		},
@@ -160,33 +200,33 @@ def create_stock_entry(source_name, target_doc=None):
     
 @frappe.whitelist()
 def make_receipt_audit(source_name, target_doc=None):
-	doclist = get_mapped_doc(
-		"Purchase Receipt",
+    doclist = get_mapped_doc(
+		'Purchase Receipt',
 		source_name,
 		{
-			"Purchase Receipt": {
-				"doctype": "Receiving",
+			'Purchase Receipt': {
+				'doctype': 'Receiving',
 				 'field_map': {
                     'name': 'reference_purchase_receipt',
-                    "supplier":"supplier",
-					"supplier_name":"supplier_name"
+                    'supplier': 'supplier',
+					'supplier_name': 'supplier_name',
                 }
 			},
-			"Purchase Receipt Item": {
-				"doctype": "Receiving Item",
-				"field_map": {
-					"warehouse": "s_warehouse",
-					"parent": "reference_purchase_receipt",
-					"item_code": "item_code",
-					"item_name": "item_name",
-					"received_qty": "expected_qty",
-					"rejected_qty": "qty",
-					"uom":"uom",
-					"conversion_factor":"conversion_factor",
+			'Purchase Receipt Item': {
+				'doctype': 'Receiving Item',
+				'field_map': {
+					'warehouse': 's_warehouse',
+					'parent': 'reference_purchase_receipt',
+					'item_code': 'item_code',
+					'item_name': 'item_name',
+					'received_qty': 'expected_qty',
+					'rejected_qty': 'qty',
+					'uom':'uom',
+					'conversion_factor':'conversion_factor',
 				},
 			},
 		},
 		target_doc,
 	)
 
-	return doclist
+    return doclist

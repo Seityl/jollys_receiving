@@ -130,6 +130,8 @@ def update_verified_scan(
         if verify_qty > 0:
             response['message'] = f'+{verify_qty} Received QTY<br><br>{verify_item_name}'
 
+        # update_per_received(receipt_audit, item_table)
+
         return response
 
     except Exception as e:
@@ -344,6 +346,46 @@ def get_expiration_dates_by_item_code(item_code):
             'status': 'error',
             'message': f'Something went wrong: {e}'
         }
+
+def get_total_received_qty(item_table):
+    total_received_qty = 0
+
+    try:
+        for row in item_table:
+            row_received_qty = row.qty or 0
+            total_received_qty += row_received_qty
+
+        return total_received_qty
+    
+    except Exception as e:
+        frappe.throw(f'Unexpected Error in get_received_qty_by_row: {e}')
+
+def get_total_expected_qty(item_table):
+    total_expected_qty = 0
+
+    try:
+        for row in item_table:
+            row_expected_qty = row.expected_qty or 0
+            total_expected_qty += row_expected_qty
+
+        return total_expected_qty
+    
+    except Exception as e:
+        frappe.throw(f'Unexpected Error in get_received_qty: {e}')
+
+def update_per_received(receiving, item_table):
+    try:
+        total_expected_qty = get_total_expected_qty(item_table)
+        total_received_qty = get_total_received_qty(item_table)
+
+        if(total_expected_qty != 0 and total_received_qty != 0):
+            per_received = (total_received_qty / total_expected_qty) * 100
+            receiving.per_received = per_received
+            receiving.save()
+            frappe.db.commit()
+
+    except Exception as e:
+            frappe.throw(f'Unexpected Error in update_per_receive: {e}')
 
 def clear_barcode_field(receipt_audit):
     receipt_audit.scan_code = ''

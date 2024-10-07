@@ -9,41 +9,29 @@
  "engine": "InnoDB",
  "field_order": [
   "details_tab",
-  "section_break_uz2z",
-  "naming_series",
-  "amended_from",
-  "section_break_eeln",
-  "reference_purchase_receipt",
-  "customs_entry",
-  "column_break_ogtb",
-  "supplier",
-  "supplier_name",
   "section_break_scanning",
   "scan_code",
   "column_break_ywcc",
   "verify_scan",
   "section_break_rryl",
   "items",
+  "more_info_tab",
+  "amended_from",
+  "receiving_status_section",
+  "per_received",
+  "section_break_eeln",
+  "reference_purchase_receipt",
+  "customs_entry",
+  "column_break_ogtb",
+  "supplier",
+  "supplier_name",
   "connections_tab"
  ],
  "fields": [
   {
    "fieldname": "details_tab",
    "fieldtype": "Tab Break",
-   "label": "Details"
-  },
-  {
-   "fieldname": "section_break_uz2z",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "naming_series",
-   "fieldtype": "Select",
-   "hidden": 1,
-   "label": "Naming Series",
-   "options": "SUP-{supplier}-PR-.YYYY.MM.DD.-.#####",
-   "print_hide": 1,
-   "read_only": 1
+   "label": "Receiving"
   },
   {
    "fieldname": "amended_from",
@@ -57,13 +45,17 @@
   },
   {
    "fieldname": "section_break_eeln",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Receiving Details"
   },
   {
    "fieldname": "supplier",
    "fieldtype": "Link",
+   "in_filter": 1,
+   "in_global_search": 1,
    "label": "Supplier",
-   "options": "Supplier"
+   "options": "Supplier",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_ogtb",
@@ -72,7 +64,7 @@
   {
    "fieldname": "reference_purchase_receipt",
    "fieldtype": "Link",
-   "in_global_search": 1,
+   "ignore_user_permissions": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Reference Purchase Receipt",
@@ -99,6 +91,7 @@
    "fieldname": "verify_scan",
    "fieldtype": "Check",
    "label": "Verify Scan",
+   "no_copy": 1,
    "print_hide": 1,
    "report_hide": 1
   },
@@ -114,12 +107,6 @@
    "options": "Receiving Item"
   },
   {
-   "fieldname": "connections_tab",
-   "fieldtype": "Tab Break",
-   "label": "Connections",
-   "show_dashboard": 1
-  },
-  {
    "fieldname": "amended_from",
    "fieldtype": "Link",
    "label": "Amended From",
@@ -132,25 +119,56 @@
   {
    "fieldname": "supplier_name",
    "fieldtype": "Data",
+   "ignore_user_permissions": 1,
    "in_global_search": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Supplier's Name"
+   "label": "Supplier's Name",
+   "read_only": 1
   },
   {
    "fieldname": "customs_entry",
    "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "in_filter": 1,
    "in_global_search": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Customs Entry",
    "options": "Customs Entry"
+  },
+  {
+   "bold": 1,
+   "default": "0",
+   "fieldname": "per_received",
+   "fieldtype": "Percent",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "label": "% Received",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "more_info_tab",
+   "fieldtype": "Tab Break",
+   "label": "More Info"
+  },
+  {
+   "fieldname": "receiving_status_section",
+   "fieldtype": "Section Break",
+   "label": "Receiving Status"
+  },
+  {
+   "fieldname": "connections_tab",
+   "fieldtype": "Tab Break",
+   "label": "Connections",
+   "show_dashboard": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-09-26 09:50:08.936582",
+ "modified": "2024-10-05 12:56:21.067712",
  "modified_by": "Administrator",
  "module": "Jollys Receiving",
  "name": "Receiving",
@@ -158,6 +176,8 @@
  "owner": "Administrator",
  "permissions": [
   {
+   "amend": 1,
+   "cancel": 1,
    "create": 1,
    "delete": 1,
    "email": 1,
@@ -166,11 +186,14 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
+   "select": 1,
    "share": 1,
    "submit": 1,
    "write": 1
   },
   {
+   "amend": 1,
+   "cancel": 1,
    "create": 1,
    "delete": 1,
    "email": 1,
@@ -179,6 +202,7 @@
    "read": 1,
    "report": 1,
    "role": "Stock Manager",
+   "select": 1,
    "share": 1,
    "submit": 1,
    "write": 1
@@ -198,8 +222,10 @@
  ],
  "search_fields": "reference_purchase_receipt,supplier_name,customs_entry",
  "show_name_in_global_search": 1,
+ "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
+ "title_field": "supplier_name",
  "track_changes": 1
 }
