@@ -1,0 +1,114 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-10-10 12:13:18.869944",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "item_details_section",
+  "item_code",
+  "column_break_luro",
+  "item_name",
+  "section_break_ynkt",
+  "warehouse",
+  "capacity",
+  "column_break_cvwe",
+  "is_in_warehouse",
+  "section_break_auvj",
+  "erp_qty",
+  "column_break_kdqe",
+  "actual_qty"
+ ],
+ "fields": [
+  {
+   "fieldname": "item_details_section",
+   "fieldtype": "Section Break",
+   "label": "Item Details"
+  },
+  {
+   "bold": 1,
+   "fieldname": "item_code",
+   "fieldtype": "Link",
+   "label": "Item Code",
+   "options": "Item",
+   "read_only": 1,
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "in_global_search": 1,
+   "label": "Item Name",
+   "print_hide": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_ynkt",
+   "fieldtype": "Section Break",
+   "label": "Warehouse Details"
+  },
+  {
+   "fieldname": "warehouse",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Warehouse",
+   "read_only": 1
+  },
+  {
+   "fieldname": "capacity",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Warehouse Capacity"
+  },
+  {
+   "fieldname": "column_break_cvwe",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_in_warehouse",
+   "fieldtype": "Check",
+   "label": "Is In Warehouse"
+  },
+  {
+   "fieldname": "section_break_auvj",
+   "fieldtype": "Section Break",
+   "label": "Stock Details"
+  },
+  {
+   "fieldname": "erp_qty",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "ERP QTY",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_kdqe",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "actual_qty",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Actual QTY"
+  },
+  {
+   "fieldname": "column_break_luro",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-10-18 13:00:42.302025",
+ "modified_by": "Administrator",
+ "module": "Stock Audit",
+ "name": "Stock Audit Location",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

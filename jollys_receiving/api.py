@@ -2,7 +2,8 @@ import frappe
 from frappe import _
 from typing import Optional, Union
 from frappe.model.mapper import get_mapped_doc
-from .scanner import update_row_conversion_factor_by_item_code, update_not_verified_scan, get_verify_item_data, update_verified_scan, update_uom_conversion_factor, get_received_qty_from_row, get_expiration_dates_by_item_code, update_expiration_dates_by_item_code, update_per_received
+from frappe.utils import cint, cstr, flt, get_link_to_form
+from .scanner import update_row_conversion_factor_by_item_code, update_not_verified_scan, get_verify_item_data, update_verified_scan, update_uom_conversion_factor, get_received_qty_from_row, get_expiration_dates_by_item_code, update_expiration_dates_by_item_code
 
 @frappe.whitelist()
 def fetch_customs_entry(purchase_receipt_name):
@@ -39,9 +40,9 @@ def fetch_expiration_dates(item_code):
         }
 
 @frappe.whitelist()
-def fetch_received_qty_from_row(receipt_audit_name, item_code):
+def fetch_received_qty_from_row(receiving_name, item_code):
     try:
-        return get_received_qty_from_row(receipt_audit_name, item_code)
+        return get_received_qty_from_row(receiving_name, item_code)
 
     except Exception as e:
         return {
@@ -50,9 +51,9 @@ def fetch_received_qty_from_row(receipt_audit_name, item_code):
         }
     
 @frappe.whitelist()
-def fetch_item_data(receipt_audit_name):
+def fetch_item_data(receiving_name, barcode=None):
     try:
-        return get_verify_item_data(receipt_audit_name)
+        return get_verify_item_data(receiving_name, barcode)
 
     except Exception as e:
         return {
@@ -86,9 +87,9 @@ def update_expiration_dates(
         }
 
 @frappe.whitelist()
-def update_not_verified_item(receipt_audit_name):
+def update_not_verified_item(receiving_name):
     try:
-        return update_not_verified_scan(receipt_audit_name)
+        return update_not_verified_scan(receiving_name)
 
     except Exception as e:
         return {
@@ -98,7 +99,7 @@ def update_not_verified_item(receipt_audit_name):
 
 @frappe.whitelist()
 def update_verified_item(
-    	receipt_audit_name,
+    	receiving_name,
         verify_item_code,
         verify_item_name,
         verify_qty: int = None, 
@@ -108,7 +109,7 @@ def update_verified_item(
 
     try:
         return update_verified_scan(
-            receipt_audit_name,
+            receiving_name,
             verify_item_code,
             verify_item_name,
             verify_qty=verify_qty,
@@ -134,26 +135,12 @@ def update_item_uom_conversion_factor(item_code, uom, conversion_factor):
         }
 
 @frappe.whitelist()
-def update_row_conversion_factor_by_item_code_code(receipt_audit_name, item_code):
-    try:
-        receipt_audit = frappe.get_doc('Receiving', receipt_audit_name)
-        item_table = receipt_audit.items
-        
-        update_row_conversion_factor_by_item_code(receipt_audit, item_table, item_code)
-
-    except Exception as e:
-        return {
-            'status': 'error',
-            'message': f'An unexpected error occurred: {str(e)}'
-        }
-
-@frappe.whitelist()
-def update_received_percentage(receiving_name):
+def update_row_conversion_factor_by_item_code_code(receiving_name, item_code):
     try:
         receiving = frappe.get_doc('Receiving', receiving_name)
         item_table = receiving.items
         
-        update_per_received(receiving, item_table)
+        update_row_conversion_factor_by_item_code(receiving, item_table, item_code)
 
     except Exception as e:
         return {
@@ -197,9 +184,54 @@ def create_stock_entry(source_name, target_doc=None):
 	)
     
     return doclist
-    
+
+# @frappe.whitelist()
+# def make_purchase_receipt_from_receiving(source_name, target_doc=None):
+# 	def update_item(obj, target, source_parent):
+# 		target.qty = flt(obj.qty) - flt(obj.received_qty)
+# 		target.stock_qty = (flt(obj.qty) - flt(obj.received_qty)) * flt(obj.conversion_factor)
+# 		target.amount = (flt(obj.qty) - flt(obj.received_qty)) * flt(obj.rate)
+# 		target.base_amount = (
+# 			(flt(obj.qty) - flt(obj.received_qty)) * flt(obj.rate) * flt(source_parent.conversion_rate)
+# 		)
+
+# 	doc = get_mapped_doc(
+# 		"Purchase Order",
+# 		source_name,
+# 		{
+# 			"Purchase Order": {
+# 				"doctype": "Purchase Receipt",
+# 				"field_map": {"supplier_warehouse": "supplier_warehouse"},
+# 				"validation": {
+# 					"docstatus": ["=", 1],
+# 				},
+# 			},
+# 			"Purchase Order Item": {
+# 				"doctype": "Purchase Receipt Item",
+# 				"field_map": {
+# 					"name": "purchase_order_item",
+# 					"parent": "purchase_order",
+# 					"bom": "bom",
+# 					"material_request": "material_request",
+# 					"material_request_item": "material_request_item",
+# 					"sales_order": "sales_order",
+# 					"sales_order_item": "sales_order_item",
+# 					"wip_composite_asset": "wip_composite_asset",
+# 				},
+# 				"postprocess": update_item,
+# 				"condition": lambda doc: abs(doc.received_qty) < abs(doc.qty)
+# 				and doc.delivered_by_supplier != 1,
+# 			},
+# 			"Purchase Taxes and Charges": {"doctype": "Purchase Taxes and Charges", "add_if_empty": True},
+# 		},
+# 		target_doc,
+# 		set_missing_values,
+# 	)
+
+# 	return doc
+
 @frappe.whitelist()
-def make_receipt_audit(source_name, target_doc=None):
+def make_receiving_from_purchase_receipt(source_name, target_doc=None):
     doclist = get_mapped_doc(
 		'Purchase Receipt',
 		source_name,
@@ -220,13 +252,49 @@ def make_receipt_audit(source_name, target_doc=None):
 					'item_code': 'item_code',
 					'item_name': 'item_name',
 					'received_qty': 'expected_qty',
-					'rejected_qty': 'qty',
 					'uom':'uom',
 					'conversion_factor':'conversion_factor',
 				},
+                'field_no_map': {
+                    'qty': 0
+                }
 			},
 		},
 		target_doc,
 	)
 
     return doclist
+
+# @frappe.whitelist()
+# def make_receiving_from_purchase_order(source_name, target_doc=None):
+#     doclist = get_mapped_doc(
+# 		"Purchase Order",
+# 		source_name,
+# 		{
+# 			'Purchase Order': {
+# 				'doctype': 'Receiving',
+# 				 'field_map': {
+#                     'name': 'reference_purchase_order',
+#                     'supplier': 'supplier',
+# 					'supplier_name': 'supplier_name',
+#                 }
+# 			},
+# 			'Purchase Order Item': {
+# 				'doctype': 'Receiving Item',
+# 				'field_map': {
+# 					'parent': 'reference_purchase_order',
+# 					'item_code': 'item_code',
+# 					'item_name': 'item_name',
+# 					'qty': 'expected_qty',
+# 					'uom':'uom',
+# 					'conversion_factor':'conversion_factor'
+# 				},
+#                 'field_no_map': {
+#                     'qty': 0
+#                 }
+# 			},
+# 		},
+# 		target_doc,
+# 	)
+
+#     return doclist

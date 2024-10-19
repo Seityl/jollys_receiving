@@ -67,10 +67,10 @@ def update_uom_conversion_factor(item_code, uom, conversion_factor):
             'message': f'An unexpected error occurred: {str(e)}'
         }
 
-def update_not_verified_scan(receipt_audit_name):
-    receipt_audit = frappe.get_doc('Receiving', receipt_audit_name)
-    item_table = receipt_audit.items
-    barcode = receipt_audit.get('scan_code')
+def update_not_verified_scan(receiving_name):
+    receiving = frappe.get_doc('Receiving', receiving_name)
+    item_table = receiving.items
+    barcode = receiving.get('scan_code')
     item_code = get_item_code_from_barcode(barcode)     
     item_name = get_item_name_from_barcode(barcode)   
     
@@ -78,7 +78,7 @@ def update_not_verified_scan(receipt_audit_name):
         if is_item_code_in_table(item_code, item_table):
             try:
                 return {
-                    'data': update_item_by_item_code(item_code, item_table, receipt_audit),
+                    'data': update_item_by_item_code(item_code, item_table, receiving),
                     'status': 'success',
                     'message': f'+1 Received QTY:<br><br>{item_code}<br>{item_name}'
                 }
@@ -96,14 +96,14 @@ def update_not_verified_scan(receipt_audit_name):
             }
 
     else:
-        clear_barcode_field(receipt_audit)
+        clear_barcode_field(receiving)
         return {
             'status': 'error',
             'message': f'Barcode: \'{barcode}\' is invalid'
         }
 
 def update_verified_scan(
-        receipt_audit_name,
+        receiving_name,
         verify_item_code,
         verify_item_name,
         verify_qty=None, 
@@ -112,14 +112,14 @@ def update_verified_scan(
     ):
 
     try:
-        receipt_audit = frappe.get_doc('Receiving', receipt_audit_name)
-        item_table = receipt_audit.items
+        receiving = frappe.get_doc('Receiving', receiving_name)
+        item_table = receiving.items
 
         response = {'data':
             update_item_by_item_code(
                 verify_item_code,
                 item_table,
-                receipt_audit,
+                receiving,
                 verify_scan_qty=verify_qty,
                 verify_scan_uom=verify_scan_uom,
                 verify_conversion_factor=verify_conversion_factor
@@ -130,33 +130,31 @@ def update_verified_scan(
         if verify_qty > 0:
             response['message'] = f'+{verify_qty} Received QTY<br><br>{verify_item_name}'
 
-        # update_per_received(receipt_audit, item_table)
-
         return response
 
     except Exception as e:
-        clear_barcode_field(receipt_audit)
+        clear_barcode_field(receiving)
 
         return {
             'status': 'error',
             'message': f'An unexpected error occurred: {str(e)}'
         }
 
-def update_row_conversion_factor_by_item_code(receipt_audit, item_table, item_code):
+def update_row_conversion_factor_by_item_code(receiving, item_table, item_code):
     for row in item_table:
         row_item_code = row.get('item_code') 
 
         if row_item_code == item_code:
             row.conversion_factor = 1
 
-            receipt_audit.save()
+            receiving.save()
             frappe.db.commit()
                 
 
 def update_item_by_item_code(
         item_code,
         item_table, 
-        receipt_audit, 
+        receiving, 
         verify_scan_qty=None, 
         verify_scan_uom=None, 
         verify_conversion_factor=None
@@ -179,7 +177,7 @@ def update_item_by_item_code(
                     row.conversion_factor = verify_conversion_factor
                     row.uom = verify_scan_uom
 
-                    receipt_audit.save()
+                    receiving.save()
                     frappe.db.commit()
 
                     return True
@@ -193,7 +191,7 @@ def update_item_by_item_code(
                         row_qty += 1
                         row.qty = row_qty
 
-                    receipt_audit.save()
+                    receiving.save()
                     frappe.db.commit()
 
                     return True
@@ -218,9 +216,9 @@ def get_row_details_from_table(item_table, item_code):
 
                 return row_details
 
-def get_received_qty_from_row(receipt_audit_name, item_code):
-    receipt_audit = frappe.get_doc('Receiving', receipt_audit_name)
-    item_table = receipt_audit.items
+def get_received_qty_from_row(receiving_name, item_code):
+    receiving = frappe.get_doc('Receiving', receiving_name)
+    item_table = receiving.items
     try:
         received_qty = get_row_details_from_table(item_table, item_code)['received_qty']
         data = {
@@ -233,12 +231,14 @@ def get_received_qty_from_row(receipt_audit_name, item_code):
     except Exception as e:
             frappe.throw(f'Unexpected Error in update_item_by_item_code: {e}')
 
-def get_verify_item_data(receipt_audit_name):
-    receipt_audit = frappe.get_doc('Receiving', receipt_audit_name)
-    item_table = receipt_audit.items
+def get_verify_item_data(receiving_name, barcode=None):
+    receiving = frappe.get_doc('Receiving', receiving_name)
+    item_table = receiving.items
+
+    if not barcode:
+        barcode = receiving.get('scan_code')
 
     try:
-        barcode = receipt_audit.get('scan_code')
         item_code = get_item_code_from_barcode(barcode)
 
         if item_code:        
@@ -261,12 +261,12 @@ def get_verify_item_data(receipt_audit_name):
                 'verify_conversion_factor': conversion_factor
             }
 
-            clear_barcode_field(receipt_audit)
+            clear_barcode_field(receiving)
 
             return data
 
         else: 
-            clear_barcode_field(receipt_audit)
+            clear_barcode_field(receiving)
 
             return {
                 'status': 'error',
@@ -347,47 +347,7 @@ def get_expiration_dates_by_item_code(item_code):
             'message': f'Something went wrong: {e}'
         }
 
-def get_total_received_qty(item_table):
-    total_received_qty = 0
-
-    try:
-        for row in item_table:
-            row_received_qty = row.qty or 0
-            total_received_qty += row_received_qty
-
-        return total_received_qty
-    
-    except Exception as e:
-        frappe.throw(f'Unexpected Error in get_received_qty_by_row: {e}')
-
-def get_total_expected_qty(item_table):
-    total_expected_qty = 0
-
-    try:
-        for row in item_table:
-            row_expected_qty = row.expected_qty or 0
-            total_expected_qty += row_expected_qty
-
-        return total_expected_qty
-    
-    except Exception as e:
-        frappe.throw(f'Unexpected Error in get_received_qty: {e}')
-
-def update_per_received(receiving, item_table):
-    try:
-        total_expected_qty = get_total_expected_qty(item_table)
-        total_received_qty = get_total_received_qty(item_table)
-
-        if(total_expected_qty != 0 and total_received_qty != 0):
-            per_received = (total_received_qty / total_expected_qty) * 100
-            receiving.per_received = per_received
-            receiving.save()
-            frappe.db.commit()
-
-    except Exception as e:
-            frappe.throw(f'Unexpected Error in update_per_receive: {e}')
-
-def clear_barcode_field(receipt_audit):
-    receipt_audit.scan_code = ''
-    receipt_audit.save()
+def clear_barcode_field(receiving):
+    receiving.scan_code = ''
+    receiving.save()
     frappe.db.commit()

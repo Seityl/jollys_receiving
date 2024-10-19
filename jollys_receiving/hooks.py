@@ -4,12 +4,14 @@ app_publisher = "Jollys Pharmacy"
 app_description = "App for verifying receivings at Jollys Pharmacy."
 app_email = "cdgrant@jollysonline.com"
 app_license = "mit"
+
 # required_apps = []
 
 # Includes in <head>
 # ------------------
+
 fixtures = [
-    "Custom Field"
+    {"dt":"Custom Field","filters":[["name","in",("Stock Entry-custom_reference_receiving")]]}
 ]
 
 # include js, css files in header of desk.html
@@ -31,7 +33,12 @@ fixtures = [
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-# doctype_js = {"doctype" : "public/js/doctype.js"}
+
+doctype_js = {
+    "Purchase Receipt" : "public/js/custom_Purchase Receipt.js",
+    # "Purchase Order" : "public/js/custom_Purchase Order.js"
+}
+
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}

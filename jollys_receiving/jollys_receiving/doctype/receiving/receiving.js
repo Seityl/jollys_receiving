@@ -3,7 +3,7 @@
 
 frappe.ui.form.on('Receiving', {
     onload: function(frm) {
-        if(frm.is_new()) {
+        if(frm.is_new() && frm.doc.reference_purchase_receipt) {
             frappe.call({
                 method: 'jollys_receiving.api.fetch_customs_entry',
                 freeze: true,
@@ -18,7 +18,7 @@ frappe.ui.form.on('Receiving', {
                         frappe.show_alert({
                             message: r.message['message'],
                             indicator:'red'
-                        }, 5);
+                        }, 10);
                     }
                 }
             });
@@ -26,17 +26,11 @@ frappe.ui.form.on('Receiving', {
         if(frm.doc.scan_code) {
             frm.set_value('scan_code','');
         }
-        if(frm.doc.docstatus == 1) {
+        if(frm.doc.docstatus == 1 || frm.doc.docstatus == 2) {
             // Hide verify scan checkbox when document is submitted
             frm.fields_dict['verify_scan'].df.hidden = true;
-            frm.refresh_field('verify_scan');
-            // Hide scan mode button when document is submitted
-            // frm.fields_dict['continuous_scan'].df.hidden = true;
-            // frm.refresh_field('continuous_scan');            
             // Hide scan box when document is submitted
             frm.fields_dict['scan_code'].df.hidden = true;
-            frm.refresh_field('scan_code');            
-            // Add button to create Stock Entry from receiving when document is submitted
         }
     },
     refresh: function(frm) {
@@ -47,7 +41,7 @@ frappe.ui.form.on('Receiving', {
                 __('Create')
             );
             frm.page.set_inner_btn_group_as_primary(__('Create'));
-        }
+        };
     },
     scan_code: function(frm) {
         scan_barcode(frm);   
@@ -61,25 +55,6 @@ frappe.ui.form.on('Receiving', {
     },
 });
 
-// frappe.ui.form.on("[Receiving]", "[continuous_scan]", function(frm) { 
-//    console.log('hi'); 
-//     let d = new frappe.ui.Dialog({
-//         title: '<b>Scan Mode</b>',
-//         fields: 
-//         [{
-//             label: 'Scan Barcode',
-//             fieldname: 'scan_barcode',
-//             fieldtype: 'Data',
-//         }],
-//         size: 'small',
-//         primary_action_label: '<b>Exit</b>',
-//         primary_action(values) {
-//             d.hide()
-//         }
-//     });
-//     d.show();
-// });
-
 // Data of verify scan dialog
 let data = {};
 
@@ -88,43 +63,20 @@ function scan_barcode(frm) {
         frm.save().then(() => {
             if(frm.doc.scan_code) {
                 if(frm.doc.verify_scan) {
-                    update_verified_item(frm).then(() => {
-                        update_received_percentage(frm);
-                    });
+                    update_verified_item(frm);
                 } else {
-                    update_not_verified_item(frm).then(() => {
-                        update_received_percentage(frm);
-                    });
+                    update_not_verified_item(frm);
                 }
             }
         });
     }
 }
 
-function update_received_percentage(frm) {
-    frappe.call({
-        method: 'jollys_receiving.api.update_received_percentage',
-        args: {
-            receiving_name: frm.doc.name
-        },
-        callback: (r) => {
-            if(r.message['status'] == 'error') {
-                frappe.show_alert({
-                    message: r.message['message'],
-                    indicator:'red'
-                }, 5);
-            } else {
-                frm.refresh_field('per_received');
-            }
-        }
-    });
-}
-
 function update_not_verified_item(frm) {
     frappe.call({
         method: 'jollys_receiving.api.update_not_verified_item',
         args: {
-            receipt_audit_name: frm.doc.name
+            receiving_name: frm.doc.name
         },
         callback: (r) => {
             if(r.message['data']) {
@@ -133,18 +85,17 @@ function update_not_verified_item(frm) {
                         message: r.message['message'],
                         indicator:'green'
                     }, 10);
-                    update_received_percentage(frm);
                 } else {
                     frappe.show_alert({
                         message: r.message['message'],
                         indicator:'red'
-                    }, 5);
+                    }, 10);
                 }
             } else if(!r.message['data']) {
                 frappe.show_alert({
                     message: r.message['message'],
                     indicator:'red'
-                }, 5);
+                }, 10);
             }
         }
     });
@@ -155,7 +106,7 @@ function update_verified_item(frm) {
     frappe.call({
         method: 'jollys_receiving.api.fetch_item_data',
         args: {
-            receipt_audit_name: frm.doc.name
+            receiving_name: frm.doc.name,
         },
         callback: (r) => {
             if(r.message['status'] === 'success') {
@@ -174,7 +125,7 @@ function update_verified_item(frm) {
                 frappe.show_alert({
                     message: r.message['message'],
                     indicator:'red'
-                }, 5);
+                }, 10);
                 frm.reload_doc();
             }
         }
@@ -186,7 +137,7 @@ async function check_condition(frm, values) {
         frappe.call({
             method: 'jollys_receiving.api.fetch_received_qty_from_row',
             args: {
-                receipt_audit_name: frm.doc.name,
+                receiving_name: frm.doc.name,
                 item_code: values['verify_item_code']
             },
             callback: (r) => {
@@ -216,7 +167,7 @@ function update_row(frm, values, data) {
     frappe.call({
         method: 'jollys_receiving.api.update_verified_item',
         args: {
-            receipt_audit_name: frm.doc.name,
+            receiving_name: frm.doc.name,
             verify_item_code: values['verify_item_code'],
             verify_item_name: values['verify_item_name'],
             verify_qty: values['verify_qty'] || 0,
@@ -232,13 +183,11 @@ function update_row(frm, values, data) {
                     }, 10);
                 }
 
-                update_received_percentage(frm);
-                
                 if(values['verify_conversion_factor'] != data['verify_conversion_factor']) {
                     frappe.call({
                         method: 'jollys_receiving.api.update_item_uom_conversion_factor',
                         args: {
-                            receipt_audit_name: frm.doc.name,
+                            receiving_name: frm.doc.name,
                             item_code: values['verify_item_code'],
                             uom: values['verify_scan_uom'],
                             conversion_factor: values['verify_conversion_factor']
@@ -257,7 +206,7 @@ function update_row(frm, values, data) {
                                 frappe.call({
                                     method: 'jollys_receiving.api.update_row_conversion_factor_by_item_code_code',
                                     args: {
-                                        receipt_audit_name: frm.doc.name,
+                                        receiving_name: frm.doc.name,
                                         item_code: values['verify_item_code'],
                                     },
                                     callback: function() {
@@ -273,7 +222,7 @@ function update_row(frm, values, data) {
                 frappe.show_alert({
                     message: r.message['message'],
                     indicator:'red'
-                }, 5);
+                }, 10);
                 frm.reload_doc();
             }
         }
@@ -397,7 +346,7 @@ function create_verify_dialogue(data, frm) {
                             frappe.show_alert({
                                 message: r.message['message'],
                                 indicator:'red'
-                            }, 5);
+                            }, 10);
                         }
                     }
                 });
@@ -413,6 +362,7 @@ function create_verify_dialogue(data, frm) {
                         () => {
                             update_row(frm, values, data);
                             d.hide();
+                            frm.fields_dict['scan_code'].input.focus();
                         },
                         () => {
                             // Closes the confirmation dialog if 'no' is selected
@@ -421,9 +371,10 @@ function create_verify_dialogue(data, frm) {
                 } else {
                     update_row(frm, values, data);
                     d.hide();
+                    frm.fields_dict['scan_code'].input.focus();
                 }
             }).catch(err => {
-                console.log(err)
+                console.log(err);
             })
         }
     });

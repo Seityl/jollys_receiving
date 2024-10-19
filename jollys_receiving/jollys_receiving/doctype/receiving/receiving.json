@@ -16,15 +16,16 @@
   "section_break_rryl",
   "items",
   "more_info_tab",
-  "amended_from",
   "receiving_status_section",
+  "amended_from",
   "per_received",
   "section_break_eeln",
-  "reference_purchase_receipt",
-  "customs_entry",
-  "column_break_ogtb",
   "supplier",
   "supplier_name",
+  "column_break_ogtb",
+  "reference_purchase_receipt",
+  "reference_purchase_order",
+  "customs_entry",
   "connections_tab"
  ],
  "fields": [
@@ -163,12 +164,21 @@
    "fieldtype": "Tab Break",
    "label": "Connections",
    "show_dashboard": 1
+  },
+  {
+   "fieldname": "reference_purchase_order",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "in_standard_filter": 1,
+   "label": "Reference Purchase Order",
+   "options": "Purchase Order",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-10-05 12:56:21.067712",
+ "modified": "2024-10-16 13:31:28.435253",
  "modified_by": "Administrator",
  "module": "Jollys Receiving",
  "name": "Receiving",
