@@ -14,5 +14,18 @@
         "print_hide": 1,
         "read_only": 1,
         "insert_after": "purchase_receipt_no"
+    },
+    {
+        "doctype": "Custom Field",
+        "dt": "Item",
+        "module": "Stock",
+        "name": "Item-custom_bulk_list",
+        "fieldname": "custom_bulk_list",
+        "fieldtype": "Check",
+        "label": "Bulk List",
+        "insert_after": "allow_negative_stock",
+        "hidden": 0,
+        "print_hide": 0,
+        "read_only": 0
     }
 ]

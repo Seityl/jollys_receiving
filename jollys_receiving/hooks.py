@@ -11,7 +11,10 @@ app_license = "mit"
 # ------------------
 
 fixtures = [
-    {"dt":"Custom Field","filters":[["name","in",("Stock Entry-custom_reference_receiving")]]}
+    {"dt":"Custom Field","filters":[["name","in",(
+        "Stock Entry-custom_reference_receiving",
+        "Item-custom_bulk_list"
+    )]]}
 ]
 
 # include js, css files in header of desk.html
@@ -36,6 +39,7 @@ fixtures = [
 
 doctype_js = {
     "Purchase Receipt" : "public/js/custom_Purchase Receipt.js",
+    "Item" : "public/js/custom_Item.js",
     # "Purchase Order" : "public/js/custom_Purchase Order.js"
 }
 
