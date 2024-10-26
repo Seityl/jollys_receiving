@@ -298,3 +298,32 @@ def make_receiving_from_purchase_receipt(source_name, target_doc=None):
 # 	)
 
 #     return doclist
+
+@frappe.whitelist()
+def get_erp_qty(stock_audit, warehouse):
+    stock_audit = frappe.get_doc('Stock Audit', stock_audit)
+
+    most_recent_bin = frappe.get_all('Bin',
+            filters = {'item_code':  stock_audit.item_code, 'warehouse': warehouse},
+            fields = ['name'],
+            order_by = 'creation'
+        )
+
+    if most_recent_bin: 
+        current_erp_qty = frappe.db.get_value('Bin', most_recent_bin[0].name, 'actual_qty')
+        return current_erp_qty
+
+    return 0
+
+@frappe.whitelist()
+def get_item_code_from_barcode(barcode):
+    item = frappe.get_all('Item',
+        filters={'barcode': barcode},
+        fields=['item_code'],
+        as_list=True
+    )
+    
+    if item:
+        return item[0][0]
+
+    return None

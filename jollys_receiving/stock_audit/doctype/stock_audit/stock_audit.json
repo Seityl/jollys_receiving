@@ -1,16 +1,38 @@
 {
  "actions": [],
- "allow_rename": 1,
+ "autoname": "format: STO-AUD-{YYYY}-{#####}",
  "creation": "2024-10-10 12:12:29.004975",
+ "default_view": "List",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "posting_details_section",
+  "posting_date",
+  "posting_time",
+  "column_break_pjdx",
+  "set_posting_time",
+  "section_break_stwc",
+  "scan_code",
   "item_code",
   "column_break_nken",
   "item_name",
-  "section_break_wogj",
+  "section_break_rrxi",
+  "item_description",
+  "warehouse_details_section",
   "warehouses",
+  "add_warehouse",
+  "units_of_measure_section",
+  "uoms",
+  "expiration_dates_section",
+  "expiration_date_1",
+  "expiration_date_3",
+  "expiration_date_5",
+  "column_break_mwfi",
+  "expiration_date_2",
+  "expiration_date_4",
+  "barcode_details_section",
   "barcodes",
+  "supplier_details_section",
   "supplier_items",
   "more_info_tab",
   "amended_from",
@@ -24,7 +46,6 @@
    "in_list_view": 1,
    "label": "Item Code",
    "options": "Item",
-   "reqd": 1,
    "search_index": 1
   },
   {
@@ -34,10 +55,12 @@
   {
    "fieldname": "item_name",
    "fieldtype": "Data",
+   "hidden": 1,
    "in_global_search": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Item Name",
-   "print_hide": 1,
-   "read_only": 1
+   "print_hide": 1
   },
   {
    "fieldname": "barcodes",
@@ -67,38 +90,201 @@
    "show_dashboard": 1
   },
   {
-   "allow_bulk_edit": 1,
    "fieldname": "warehouses",
    "fieldtype": "Table",
    "label": "Warehouses",
    "options": "Stock Audit Location"
   },
   {
-   "fieldname": "section_break_wogj",
-   "fieldtype": "Section Break"
-  },
-  {
    "fieldname": "supplier_items",
    "fieldtype": "Table",
    "label": "Supplier Items",
    "options": "Stock Audit Supplier"
+  },
+  {
+   "default": "Today",
+   "fieldname": "posting_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Posting Date",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "default": "Now",
+   "fieldname": "posting_time",
+   "fieldtype": "Time",
+   "in_list_view": 1,
+   "label": "Posting Time",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_stwc",
+   "fieldtype": "Section Break",
+   "hide_border": 1,
+   "label": "Item Details"
+  },
+  {
+   "fieldname": "column_break_pjdx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "set_posting_time",
+   "fieldtype": "Check",
+   "label": "Edit Posting Date and Time"
+  },
+  {
+   "fieldname": "expiration_date_1",
+   "fieldtype": "Date",
+   "label": "Expiration Date 1"
+  },
+  {
+   "fieldname": "expiration_date_2",
+   "fieldtype": "Date",
+   "label": "Expiration Date 2"
+  },
+  {
+   "fieldname": "expiration_date_3",
+   "fieldtype": "Date",
+   "label": "Expiration Date 3"
+  },
+  {
+   "fieldname": "expiration_date_4",
+   "fieldtype": "Date",
+   "label": "Expiration Date 4"
+  },
+  {
+   "fieldname": "expiration_date_5",
+   "fieldtype": "Date",
+   "label": "Expiration Date 5"
+  },
+  {
+   "fieldname": "column_break_mwfi",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "posting_details_section",
+   "fieldtype": "Section Break",
+   "hidden": 1,
+   "label": "Posting Details"
+  },
+  {
+   "fieldname": "section_break_rrxi",
+   "fieldtype": "Section Break",
+   "hidden": 1
+  },
+  {
+   "fieldname": "item_description",
+   "fieldtype": "Text Editor",
+   "label": "Item Description"
+  },
+  {
+   "fieldname": "supplier_details_section",
+   "fieldtype": "Section Break",
+   "hidden": 1,
+   "label": "Supplier Details"
+  },
+  {
+   "fieldname": "add_warehouse",
+   "fieldtype": "Button",
+   "label": "Add Warehouse"
+  },
+  {
+   "fieldname": "units_of_measure_section",
+   "fieldtype": "Section Break",
+   "hidden": 1,
+   "label": "Units of Measure"
+  },
+  {
+   "fieldname": "uoms",
+   "fieldtype": "Table",
+   "label": "UOMs",
+   "options": "Stock Audit UOM"
+  },
+  {
+   "fieldname": "barcode_details_section",
+   "fieldtype": "Section Break",
+   "hidden": 1,
+   "label": "Barcode Details"
+  },
+  {
+   "fieldname": "expiration_dates_section",
+   "fieldtype": "Section Break",
+   "hidden": 1,
+   "label": "Expiration Dates"
+  },
+  {
+   "fieldname": "warehouse_details_section",
+   "fieldtype": "Section Break",
+   "hidden": 1,
+   "label": "Warehouse Details"
+  },
+  {
+   "fieldname": "scan_code",
+   "fieldtype": "Data",
+   "label": "Scan Barcode",
+   "print_hide": 1,
+   "report_hide": 1
   }
  ],
+ "force_re_route_to_default_view": 1,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-10-19 13:36:01.784253",
+ "modified": "2024-10-26 12:09:20.210131",
  "modified_by": "Administrator",
  "module": "Stock Audit",
  "name": "Stock Audit",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
    "read": 1,
-   "role": "System Manager"
+   "report": 1,
+   "role": "System Manager",
+   "select": 1,
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Stock Manager",
+   "select": 1,
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Stock User",
+   "share": 1,
+   "write": 1
   }
  ],
+ "show_name_in_global_search": 1,
+ "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "timeline_field": "item_code",
+ "title_field": "item_code"
 }
