@@ -28,7 +28,7 @@ class StockAudit(StockController):
         for warehouse in self.warehouses:
             if warehouse.is_in_warehouse and warehouse.capacity < warehouse.actual_qty:
                 frappe.throw(
-                    title='Insufficient Capacity Error',
+                    title = 'Insufficient Capacity Error',
                     msg = _(f'Warehouse Capacity {warehouse.capacity} must be greater than the actual stock level of {warehouse.actual_qty} for warehouse {warehouse.warehouse}.')
                 )
 
@@ -38,18 +38,21 @@ class StockAudit(StockController):
         for warehouse in self.warehouses:
             if warehouse.this_priority and warehouse.this_priority < 1:
                 frappe.throw(
-                    title='Invalid Priority Error',
+                    title = 'Invalid Priority Error',
                     msg = _(f'Priority for warehouse {warehouse.warehouse} cannot be lesser than 1.')
                 )
 
             if warehouse.this_priority in priority_list:
                 frappe.throw(
-                    title='Invalid Priority Error',
+                    title = 'Invalid Priority Error',
                     msg = _(f'Priority {warehouse.this_priority} appears more than one time.')
                 )
 
-            # To avoid Invalid Priority Error when multiple warehouses don't have priorities
-            if warehouse.this_priority != None:
+            if frappe.db.exists('Stock Audit', self.name):
+                if warehouse.this_priority != None and warehouse.is_in_warehouse:
+                    priority_list.append(warehouse.this_priority)
+
+            elif warehouse.is_in_warehouse:
                 priority_list.append(warehouse.this_priority)
 
     def validate_erp_qty(self):
@@ -57,8 +60,9 @@ class StockAudit(StockController):
             most_recent_bin = frappe.get_all('Bin',
                 filters = {'item_code':  self.item_code, 'warehouse': warehouse.warehouse},
                 fields = ['name'],
-                order_by='creation'
+                order_by = 'creation'
             )
+
             if most_recent_bin: 
                 current_erp_qty = frappe.db.get_value('Bin', most_recent_bin[0].name, 'actual_qty')
 
@@ -68,7 +72,7 @@ class StockAudit(StockController):
     def get_item_data(self):
         if not self.item_code and not self.scan_code:
             frappe.throw(
-                title='Error',
+                title = 'Error',
                 msg = _(f'No item code or barcode is attached.')
             )
 
@@ -86,14 +90,14 @@ class StockAudit(StockController):
 
     def set_item_code(self):
         item_code = frappe.get_all('Item',
-            filters={'barcode': self.scan_code},
-            fields=['item_code'],
-            as_list=True
+            filters = {'barcode': self.scan_code},
+            fields = ['item_code'],
+            as_list = True
         )
         
         if not item_code:
             frappe.throw(
-                title='Invalid Barcode Error',
+                title = 'Invalid Barcode Error',
                 msg = _(f'No item found for barcode {self.scan_code}.')
             )
 
@@ -116,6 +120,7 @@ class StockAudit(StockController):
             current_bin_qty = frappe.db.get_value('Bin', current_bin.name, 'actual_qty')
 
             # Only return bins where quantity is more than 0. Avoids negative bin quantities and empty bin locations.
+            # TODO: Cleanup negative bin locations by making stock 0 using material receipt
             if current_bin_qty > 0:
                 current_bin_warehouse = frappe.db.get_value('Bin', current_bin.name, 'warehouse')
                 current_bin_parent_warehouse = frappe.db.get_value('Warehouse', current_bin_warehouse, 'parent_warehouse')
@@ -164,7 +169,6 @@ class StockAudit(StockController):
 
         if putaway_rule:	
             capacity = frappe.db.get_value('Putaway Rule', putaway_rule[0].name, 'capacity')
-            print(f"Retrieved Capacity for {warehouse}: {capacity}")  # Debug output
             return float(capacity) if capacity is not None else 0.0
 
         return 0.0
@@ -449,7 +453,6 @@ class StockAudit(StockController):
             
             if warehouse.reference_putaway_rule:
                 putaway_rule_doc = frappe.get_doc('Putaway Rule', warehouse.reference_putaway_rule)
-
                 
                 if(putaway_rule_doc.warehouse != warehouse.warehouse):	
                     frappe.throw(
@@ -473,8 +476,8 @@ class StockAudit(StockController):
                 else:
                     self.create_putaway_rule(warehouse.warehouse, warehouse.capacity, warehouse.this_priority)
 
-                    #  Not sure why this works but it does. Do. Not. Modify.
-                    if warehouse.is_new_warehouse:
-                      self.create_material_receipt(warehouse.warehouse, warehouse.actual_qty)
+                #  Not sure why this works but it does. Do. Not. Modify.
+                if warehouse.is_new_warehouse:
+                    self.create_material_receipt(warehouse.warehouse, warehouse.actual_qty)
         
         # TODO: compare all putaway rules for an audit to those which are linked to it and disable those which are not linked
