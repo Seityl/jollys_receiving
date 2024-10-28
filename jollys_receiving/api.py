@@ -327,3 +327,15 @@ def get_item_code_from_barcode(barcode):
         return item[0][0]
 
     return None
+
+@frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
+def get_item_uoms(doctype, txt, searchfield, start, page_len, filters):
+	items = [filters.get("value")]
+
+	return frappe.get_all(
+		"UOM Conversion Detail",
+		filters={"parent": ("in", items), "uom": ("like", f"{txt}%")},
+		fields=["uom"],
+		as_list=1,
+	)

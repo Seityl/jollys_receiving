@@ -38,9 +38,12 @@ fixtures = [
 # include js in doctype views
 
 doctype_js = {
-    "Purchase Receipt" : "public/js/custom_Purchase Receipt.js",
     "Item" : "public/js/custom_Item.js",
-    # "Purchase Order" : "public/js/custom_Purchase Order.js"
+    "Stock Entry" : "public/js/custom_Stock Entry.js",
+    "Sales Order" : "public/js/custom_Sales Order.js",
+    "Purchase Order" : "public/js/custom_Purchase Order.js",
+    "Purchase Receipt" : "public/js/custom_Purchase Receipt.js",
+    "Material Request" : "public/js/custom_Material Request.js"
 }
 
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
