@@ -24,6 +24,9 @@ class StockAudit(StockController):
         self.update_stock_levels()
         self.set_putaway_rules()
 
+    def on_update_after_submit(self):
+        self.disable_inactive_putaway_rules()
+
     def validate_warehouse_capacity(self):
         for warehouse in self.warehouses:
             if warehouse.is_in_warehouse and warehouse.capacity < warehouse.actual_qty:
@@ -121,6 +124,9 @@ class StockAudit(StockController):
 
             # Only return bins where quantity is more than 0. Avoids negative bin quantities and empty bin locations.
             # TODO: Cleanup negative bin locations by making stock 0 using material receipt
+            # if current_bin_qty < 1:
+            #     self.update_negative_stock(current_bin, current_bin_qty)
+
             if current_bin_qty > 0:
                 current_bin_warehouse = frappe.db.get_value('Bin', current_bin.name, 'warehouse')
                 current_bin_parent_warehouse = frappe.db.get_value('Warehouse', current_bin_warehouse, 'parent_warehouse')
@@ -219,6 +225,11 @@ class StockAudit(StockController):
                 'uom': uom,
                 'conversion_factor': conversion_factor,
             })
+
+    # def update_negative_stock(self, warehouse, qty):
+    #     negative_warehouse = frappe.db.get_value('Bin', warehouse.name, 'warehouse')
+    #     # difference_qty = abs(qty)
+    #     self.create_material_receipt(negative_warehouse, difference_qty)
 
     def update_supplier_items(self, item_doc, self_supplier_items):
         existing_suppliers = {(item.supplier, item.supplier_part_no) for item in item_doc.supplier_items}
@@ -332,7 +343,7 @@ class StockAudit(StockController):
 
             # Transfer ERP qty to audit waerhouse if item not in warehouse
             if not warehouse.is_in_warehouse:
-                self.create_material_transfer(warehouse.warehouse, warehouse.erp_qty, is_excess=True)
+                self.create_material_transfer(warehouse, warehouse.warehouse, warehouse.erp_qty, is_excess=True)
                 continue
                 
             # Skip warehouse if count is accurate
@@ -342,12 +353,18 @@ class StockAudit(StockController):
             # Transfer difference out of location if ERP QTY more than Actual QTY
             elif warehouse.erp_qty > warehouse.actual_qty:
                 difference_qty = warehouse.erp_qty - warehouse.actual_qty
-                self.create_material_transfer(warehouse.warehouse, difference_qty, is_excess=True)
+                self.create_material_transfer(warehouse, warehouse.warehouse, difference_qty, is_excess=True)
 
             # Create material receipt to add difference if Actual QTY more than ERP QTY
             elif warehouse.erp_qty < warehouse.actual_qty:
                 difference_qty = warehouse.actual_qty - warehouse.erp_qty
-                self.create_material_receipt(warehouse.warehouse, difference_qty)
+                if not warehouse.reference_putaway_rule:
+                    self.create_material_receipt(warehouse, warehouse.warehouse, difference_qty)
+
+                elif warehouse.reference_putaway_rule:
+                    putaway_rule_doc = frappe.get_doc('Putaway Rule', warehouse.reference_putaway_rule)
+                    self.update_putaway_rule(putaway_rule_doc, warehouse)
+                    self.create_material_receipt(warehouse, warehouse.warehouse, difference_qty)
 
     def update_putaway_rule(self, putaway_rule_doc, warehouse, updated=False):
         if not warehouse.is_in_warehouse:
@@ -375,7 +392,7 @@ class StockAudit(StockController):
             putaway_rule_doc.save()
             self.add_linked_comment(putaway_rule_doc)
 
-    def create_material_transfer(self, from_warehouse, qty:int, to_warehouse=None, is_excess=False):
+    def create_material_transfer(self, row, from_warehouse, qty:int, to_warehouse=None, is_excess=False):
         if is_excess:
             to_warehouse = 'Stock Audit Warehouse - JP'
 
@@ -398,9 +415,11 @@ class StockAudit(StockController):
 
         new_material_transfer_doc.insert()
         new_material_transfer_doc.submit()
+        row.reference_stock_entry = new_material_transfer_doc.name
+        self.save()
         self.add_linked_comment(new_material_transfer_doc, new_doc=True)
 
-    def create_material_receipt(self, warehouse, qty:int):
+    def create_material_receipt(self, row, warehouse, qty:int):
         new_material_receipt_doc = frappe.get_doc({
             'doctype': 'Stock Entry',
             'stock_entry_type': 'Material Receipt',
@@ -419,9 +438,11 @@ class StockAudit(StockController):
 
         new_material_receipt_doc.insert()
         new_material_receipt_doc.submit()
+        row.reference_stock_entry = new_material_receipt_doc.name
+        self.save()
         self.add_linked_comment(new_material_receipt_doc, new_doc=True)
 
-    def create_putaway_rule(self, warehouse, capacity:float, priority:int):
+    def create_putaway_rule(self, row, warehouse, capacity:float, priority:int):
         new_putaway_rule_doc = frappe.get_doc({
             'doctype': 'Putaway Rule',
             'item_code': self.item_code,
@@ -433,6 +454,8 @@ class StockAudit(StockController):
         })
 
         new_putaway_rule_doc.insert()
+        row.reference_putaway_rule = new_putaway_rule_doc.name
+        self.save()
         self.add_linked_comment(new_putaway_rule_doc, new_doc=True)
 
     def set_putaway_rules(self):
@@ -474,10 +497,33 @@ class StockAudit(StockController):
                         self.update_putaway_rule(putaway_rule_doc, warehouse)
 
                 else:
-                    self.create_putaway_rule(warehouse.warehouse, warehouse.capacity, warehouse.this_priority)
+                    self.create_putaway_rule(warehouse, warehouse.warehouse, warehouse.capacity, warehouse.this_priority)
 
                 #  Not sure why this works but it does. Do. Not. Modify.
                 if warehouse.is_new_warehouse:
-                    self.create_material_receipt(warehouse.warehouse, warehouse.actual_qty)
+                    self.create_material_receipt(warehouse, warehouse.warehouse, warehouse.actual_qty)
         
-        # TODO: compare all putaway rules for an audit to those which are linked to it and disable those which are not linked
+    # TODO: compare all putaway rules for an audit to those which are linked to it and disable those which are not linked
+    def disable_inactive_putaway_rules(self):
+        active_putaway_rules = set()
+    
+        for warehouse in self.warehouses:
+            if warehouse.reference_putaway_rule:
+                active_putaway_rules.add(warehouse.reference_putaway_rule)
+        
+        item_putaway_rules = frappe.get_all('Putaway Rule', 
+            filters={'item_code': self.item_code},
+            fields=['name'],
+            as_list=True
+        )
+
+        for rule in item_putaway_rules:
+            rule_name = rule[0]
+            
+            if rule_name not in active_putaway_rules:
+                doc = frappe.get_doc('Putaway Rule', rule_name)
+                
+                if not doc.disable:
+                    doc.disable = 1
+                    doc.save()
+                    self.add_linked_comment(doc)

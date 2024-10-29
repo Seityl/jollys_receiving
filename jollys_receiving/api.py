@@ -339,3 +339,20 @@ def get_item_uoms(doctype, txt, searchfield, start, page_len, filters):
 		fields=["uom"],
 		as_list=1,
 	)
+
+from frappe import get_list
+
+# @frappe.whitelist()
+# @frappe.validate_and_sanitize_search_inputs
+# def get_items_by_barcode(self, barcode):
+#     return get_list(
+#         'Item',
+#         filters={
+#             'name': ['in', frappe.get_all(
+#                 'Item Barcode',
+#                 filters={'barcode': barcode},
+#                 fields=['parent']
+#             )]
+#         },
+#         fields=['*']
+#     )
