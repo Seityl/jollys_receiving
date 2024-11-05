@@ -1,0 +1,134 @@
+{
+ "actions": [],
+ "allow_copy": 1,
+ "creation": "2024-11-02 13:27:19.484541",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "warehouse",
+  "item_barcode",
+  "item_code",
+  "column_break_pdkn",
+  "item_name",
+  "description",
+  "qty",
+  "section_reorders",
+  "column_break_ovor",
+  "warehouse_reorder_level",
+  "warehouse_reorder_qty",
+  "update_reorders"
+ ],
+ "fields": [
+  {
+   "fieldname": "warehouse",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Warehouse",
+   "options": "Warehouse",
+   "reqd": 1
+  },
+  {
+   "fieldname": "item_barcode",
+   "fieldtype": "Data",
+   "label": "Item Barcode"
+  },
+  {
+   "fieldname": "column_break_pdkn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "label": "Item Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_ovor",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "warehouse_reorder_level",
+   "fieldtype": "Float",
+   "label": "Re-order Level"
+  },
+  {
+   "fieldname": "warehouse_reorder_qty",
+   "fieldtype": "Float",
+   "label": "Re-order Qty"
+  },
+  {
+   "fieldname": "update_reorders",
+   "fieldtype": "Button",
+   "label": "Update Reorder"
+  },
+  {
+   "fieldname": "qty",
+   "fieldtype": "Float",
+   "hidden": 1,
+   "label": "Current Qty",
+   "read_only": 1
+  },
+  {
+   "fieldname": "item_code",
+   "fieldtype": "Link",
+   "label": "Item Code",
+   "options": "Item"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Item Description",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_reorders",
+   "fieldtype": "Section Break",
+   "hidden": 1
+  }
+ ],
+ "hide_toolbar": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2024-11-02 23:10:21.217598",
+ "modified_by": "Administrator",
+ "module": "Stock Audit",
+ "name": "Quick Reorders",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Stock Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Stock User",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "show_name_in_global_search": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
