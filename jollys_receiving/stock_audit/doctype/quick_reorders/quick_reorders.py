@@ -63,3 +63,22 @@ def update_item_reorder(item_code, warehouse, warehouse_reorder_level, warehouse
 
     except Exception as e:
         frappe.throw(f'Unexpected error has occured: {e}')
+
+# # def create_quick_log(item_code, warehouse, o_warehouse_reorder_qty, o_warehouse_reorder_level, warehouse_reorder_qty, warehouse_reorder_level):
+# @frappe.whitelist()
+# def create_quick_log():
+#     quick_log = frappe.get_doc({
+#         'doctype': 'Quick Reorders Log',
+#         # 'user': frappe.session.user,
+#         'warehouse': 'GG Stock - JP',
+#         # 'item': item_code,
+#         # 'o_warehouse_reorder_qty': o_warehouse_reorder_qty,
+#         # 'o_warehouse_reorder_level': o_warehouse_reorder_level,
+#         # 'n_warehouse_reorder_qty': warehouse_reorder_qty,
+#         # 'n_warehouse_reorder_level': warehouse_reorder_level,
+#     })
+    
+#     quick_log.insert()
+
+#     # return 'created'
+#     # frappe.db.commit()

@@ -3,6 +3,11 @@
 
 frappe.ui.form.on('Receiving', {
     onload: function(frm) {
+        // Hides Add Row button from items child table
+        frm.get_field('items').grid.cannot_add_rows = true;
+        // Hides Delete button from items child table
+        frm.set_df_property('items', 'cannot_delete_rows', 1);
+        
         if(frm.is_new() && frm.doc.reference_purchase_receipt) {
             frappe.call({
                 method: 'jollys_receiving.api.fetch_customs_entry',
@@ -23,36 +28,244 @@ frappe.ui.form.on('Receiving', {
                 }
             });
         }
+        
         if(frm.doc.scan_code) {
             frm.set_value('scan_code','');
         }
+
+        if(frm.doc.reference_purchase_order) {
+            frm.fields_dict['customs_entry'].df.hidden = true;
+        }
+        
         if(frm.doc.docstatus == 1 || frm.doc.docstatus == 2) {
             // Hide verify scan checkbox when document is submitted
             frm.fields_dict['verify_scan'].df.hidden = true;
             // Hide scan box when document is submitted
             frm.fields_dict['scan_code'].df.hidden = true;
         }
+        
+        frm.events.show_help(frm);
     },
+    
     refresh: function(frm) {
-        if(frm.doc.docstatus == 1) {
+        frm.events.make_custom_buttons(frm);
+        frm.events.toggle_more_info_tab(frm);
+    },
+    
+    toggle_more_info_tab: function(frm) {
+        if (frm.is_new()) {
+            frm.$wrapper.find("[data-fieldname='more_info_tab']").hide();
+        } else {
+            frm.$wrapper.find("[data-fieldname='more_info_tab']").show();
+        }
+    },
+    
+    make_custom_buttons: function (frm) {
+        if(frm.is_new()) {
+			frm.add_custom_button(
+                __("Purchase Order"),
+				() => frm.events.get_items_from_purchase_order(frm),
+				__("Get Items From")
+			); 
+
+			frm.add_custom_button(
+                __("Purchase Receipt"),
+				() => frm.events.get_items_from_purchase_receipt(frm),
+				__("Get Items From")
+			);
+		}
+
+        if(!frm.is_new() || frm.doc.docstatus == 1) {
             frm.add_custom_button(
                 __('Stock Entry'),
                 frm.cscript['Stock Entry'],
                 __('Create')
             );
-            frm.page.set_inner_btn_group_as_primary(__('Create'));
+
+            frm.add_custom_button(
+                __('Material Request'),
+                frm.cscript['Material Request'],
+                __('Create')
+            );
+            
+            if(frm.doc.reference_purchase_order) {
+                frm.add_custom_button(
+                    __('Purchase Order'),
+                    frm.cscript['Purchase Order'],
+                    __('Create')
+                );
+            }
         };
-    },
-    scan_code: function(frm) {
-        scan_barcode(frm);   
-    },
-    verify_scan: function(frm) {
-        if(frm.is_dirty()) {
-            frm.save().then(() => {
-                frm.reload_doc();
-            });
+	},
+    
+    show_help: function (frm) {
+        if(frm.is_new() & frm.doc.items.length === 0) {
+            frappe.show_alert({
+                message: 'To create a receiving, please select a Purchase Receipt or Purchase Order to get items from.',
+                indicator:'blue'
+            }, 60);  
         }
     },
+
+    get_items_from_purchase_receipt: function (frm) {
+        var d = new frappe.ui.Dialog({
+            title: __('Get Items from Purchase Receipt'),
+            fields: [
+                {
+                    fieldname: 'purchase_receipt',
+                    fieldtype: 'Link',
+                    label: __('Purchase Receipt'),
+                    options: 'Purchase Receipt',
+                    reqd: 1,
+                    get_query: function () {
+                        return { filters: { docstatus: 1} };
+                    },
+                },
+            ],
+            primary_action_label: 'Get Items',
+            primary_action(values) {
+                frappe.call({
+                    method: 'jollys_receiving.api.fetch_purchase_receipt_details',
+                    freeze: true,
+                    freeze_message: 'Fetching Items...',
+                    args: {
+                        purchase_receipt_name: values['purchase_receipt']
+                    },
+                    callback: function (r) {
+                        frappe.model.clear_table(frm.doc, 'items');
+                        frm.events.clear_details(frm);                        
+                        
+                        if (r.message['status'] === 'success') {
+                            frm.set_value('reference_purchase_receipt', values['purchase_receipt'])
+                            frm.set_value('supplier_name', r.message['purchase_receipt_supplier_name'])
+                            frm.set_value('supplier', r.message['purchase_receipt_supplier'])
+                            
+                            erpnext.utils.remove_empty_first_row(frm, 'items');
+                            
+                            $.each(r.message['purchase_receipt_items'], function (i, item) {
+                                var d = frappe.model.add_child(cur_frm.doc, 'Receiving Item', 'items');
+                                
+                                d.s_warehouse = item.warehouse;
+                                d.reference_purchase_receipt = values.purchase_receipt;
+                                d.item_code = item.item_code;
+                                d.item_name = item.item_name;
+                                d.expected_qty = item.received_qty;
+                                d.uom = item.uom;
+                                d.conversion_factor = item.conversion_factor;
+                                d.qty = 0;
+                            });
+                            
+                            refresh_field('items');
+                            
+                        } else if (r.message['status'] === 'error') {
+                            frappe.show_alert({
+                                message: r.message['message'],
+                                indicator:'red'
+                            }, 10);
+                        }
+                        
+                        d.hide();
+                    },
+                });
+            },
+        });
+        
+        d.show();
+    },
+
+    get_items_from_purchase_order: function (frm) {
+        var d = new frappe.ui.Dialog({
+            title: __('Get Items from Purchase Order'),
+            fields: [
+                { 
+                    fieldname: 'purchase_order',
+                    fieldtype: 'Link',
+                    label: __('Purchase Order'),
+                    options: 'Purchase Order',
+                    reqd: 1,
+                    get_query: function () {
+                        return { filters: { docstatus: 0} };
+                    },
+                },
+            ],
+            primary_action_label: 'Get Items',
+            primary_action(values) {
+                frappe.call({
+                    method: 'jollys_receiving.api.fetch_purchase_order_details',
+                    freeze: true,
+                    freeze_message: 'Fetching Items...',
+                    args: {
+                        purchase_order_name: values['purchase_order']
+                    },
+                    callback: function (r) {
+                        frappe.model.clear_table(frm.doc, 'items');
+                        frm.events.clear_details(frm);
+
+                        if (r.message['status'] === 'success') {
+                            frm.set_value('reference_purchase_order', values['purchase_order']);
+                            frm.set_value('supplier_name', r.message['purchase_order_supplier_name']);
+                            frm.set_value('supplier', r.message['purchase_order_supplier']);
+                            
+                            erpnext.utils.remove_empty_first_row(frm, 'items');
+                            
+                            $.each(r.message['purchase_order_items'], function (i, item) {
+                                var d = frappe.model.add_child(cur_frm.doc, 'Receiving Item', 'items');
+                                
+                                d.s_warehouse = item.warehouse;
+                                d.reference_purchase_order = values.purchase_order;
+                                d.item_code = item.item_code;
+                                d.item_name = item.item_name;
+                                d.expected_qty = item.qty;
+                                d.uom = item.uom;
+                                d.conversion_factor = item.conversion_factor;
+                                d.qty = 0;
+                            });
+                            
+                            refresh_field('items');
+                            
+                        } else if (r.message['status'] === 'error') {
+                            frappe.show_alert({
+                                message: r.message['message'],
+                                indicator:'red'
+                            }, 10);
+                        }
+                        
+                        d.hide();
+                    },
+                });
+            },
+        });
+
+        d.show();
+    },
+    
+    clear_details: function(frm) {
+        frm.set_value('reference_purchase_receipt', '')
+        frm.set_value('reference_purchase_order', '')
+        frm.set_value('customs_entry', '')
+        frm.set_value('supplier_name', '')
+        frm.set_value('supplier', '')
+    },
+
+    scan_code: function(frm) {
+        if (!frm.is_new()) {
+            scan_barcode(frm);   
+        } else {
+            frm.set_value('scan_code', '');            
+        }
+    },
+    
+    verify_scan: function(frm) {
+        if (!frm.is_new()) {
+            if(frm.is_dirty()) {
+                frm.save().then(() => {
+                    frm.reload_doc();
+                });
+            }
+        } else {
+            frm.set_value('verify_scan', 0);   
+        }
+    }
 });
 
 // Data of verify scan dialog
@@ -241,9 +454,9 @@ function create_verify_dialogue(data, frm) {
             hidden: 1
         },
         {
-            label: 'Item Code / Name',
+            label: 'Item',
             fieldname: 'verify_item_name',
-            fieldtype: 'Data',
+            fieldtype: 'Text',
             read_only: 1, 
         },
         {
@@ -333,15 +546,8 @@ function create_verify_dialogue(data, frm) {
                     callback: (r) => {
                         if(r.message['status'] === 'success') {
                             d.hide(); // Hides verify dialog 
-                            data = {
-                                'expiration_item_code': item_code,
-                                'expiration_date_1': r.message['message']['expiration_date_1'], 
-                                'expiration_date_2': r.message['message']['expiration_date_2'],
-                                'expiration_date_3': r.message['message']['expiration_date_3'],
-                                'expiration_date_4': r.message['message']['expiration_date_4'],
-                                'expiration_date_5': r.message['message']['expiration_date_5']
-                            };        
-                            expiration_dialog = create_expiration_dates_dialog(data, d, item_name);
+                            expiration_dates = r.message['expiration_dates'];
+                            expiration_dialog = create_expiration_dates_dialog(expiration_dates, d, item_name, item_code);
                         } else {
                             frappe.show_alert({
                                 message: r.message['message'],
@@ -391,7 +597,7 @@ function create_verify_dialogue(data, frm) {
     d.show();
 }
 
-function create_expiration_dates_dialog(data, verify_dialog, item_name) {
+function create_expiration_dates_dialog(expiration_dates, verify_dialog, item_name, item_code) {
     let d = new frappe.ui.Dialog({
         title: '<b>Edit Expiration Dates</b>',
         fields: 
@@ -403,29 +609,20 @@ function create_expiration_dates_dialog(data, verify_dialog, item_name) {
             hidden: 1
         },
         {
-            label: '<b>Expiration Date 1</b>',
-            fieldname: 'expiration_date_1',
-            fieldtype: 'Date',
-        },
-        {
-            label: '<b>Expiration Date 2</b>',
-            fieldname: 'expiration_date_2',
-            fieldtype: 'Date',
-        },
-        {
-            label: '<b>Expiration Date 3</b>',
-            fieldname: 'expiration_date_3',
-            fieldtype: 'Date',
-        },
-        {
-            label: '<b>Expiration Date 4</b>',
-            fieldname: 'expiration_date_4',
-            fieldtype: 'Date',
-        },
-        {
-            label: '<b>Expiration Date 5</b>',
-            fieldname: 'expiration_date_5',
-            fieldtype: 'Date',
+            label: 'Expiration Dates',
+            fieldname: 'expiration_dates_table',
+            fieldtype: 'Table',
+            data: expiration_dates,
+            cannot_delete_rows: true,
+            fields: [
+                {
+                    label: 'Expiration Date',
+                    fieldname: 'expiration_date',
+                    fieldtype: 'Date',
+                    in_list_view: true,
+                    reqd: 1
+                }
+            ]
         },
         {
             label: '',
@@ -451,11 +648,7 @@ function create_expiration_dates_dialog(data, verify_dialog, item_name) {
                         method: 'jollys_receiving.api.update_expiration_dates',
                         args: {
                             item_code: values['expiration_item_code'],
-                            expiration_date_1: values['expiration_date_1'],
-                            expiration_date_2: values['expiration_date_2'],
-                            expiration_date_3: values['expiration_date_3'],
-                            expiration_date_4: values['expiration_date_4'],
-                            expiration_date_5: values['expiration_date_5'],
+                            expiration_dates: values['expiration_dates_table']
                         },
                         callback: (r) => {
                             if(r.message['status'] === 'success') {
@@ -481,11 +674,7 @@ function create_expiration_dates_dialog(data, verify_dialog, item_name) {
             );
         }
     });
-    for (const fieldname in data) {
-        if (data.hasOwnProperty(fieldname)) {
-            d.set_value(fieldname, data[fieldname]);
-        }
-    }   
+    d.set_value('expiration_item_code', item_code);
     // Makes cancel_edit button red
     d.$body.find('button[data-fieldname="cancel_edit"]').addClass('btn-danger');
     d.show();
@@ -494,6 +683,20 @@ function create_expiration_dates_dialog(data, verify_dialog, item_name) {
 cur_frm.cscript['Stock Entry'] = function() {
     frappe.model.open_mapped_doc({
         method: 'jollys_receiving.api.create_stock_entry',
+		frm: cur_frm
+	});
+};
+
+cur_frm.cscript['Material Request'] = function() {
+    frappe.model.open_mapped_doc({
+        method: 'jollys_receiving.api.create_material_request',
+		frm: cur_frm
+	});
+};
+
+cur_frm.cscript['Purchase Order'] = function() {
+    frappe.model.open_mapped_doc({
+        method: 'jollys_receiving.api.create_purchase_order',
 		frm: cur_frm
 	});
 };

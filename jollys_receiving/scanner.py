@@ -1,3 +1,4 @@
+import json
 import frappe
 from frappe import _
 
@@ -9,29 +10,25 @@ def is_item_code_in_table(item_code, item_table):
             return True
 
     return False
-
-def update_expiration_dates_by_item_code(
-        item_code,
-        expiration_date_1=None,
-        expiration_date_2=None,
-        expiration_date_3=None,
-        expiration_date_4=None,
-        expiration_date_5=None,
-    ):
+    
+def update_expiration_dates_by_item_code(item_code, expiration_dates):
     item = frappe.get_doc('Item', item_code)
 
     try:    
-        item.custom_expiration_date_1 = expiration_date_1 
-        item.custom_expiration_date_2 = expiration_date_2 
-        item.custom_expiration_date_3 = expiration_date_3 
-        item.custom_expiration_date_4 = expiration_date_4 
-        item.custom_expiration_date_5 = expiration_date_5
-        item.save()
-        frappe.db.commit()
+        expiration_dates = json.loads(expiration_dates)
+        item.custom_expiration_dates_table.clear()
 
+        for expiration_date in expiration_dates:
+            item.append('custom_expiration_dates_table', {
+                'expiration_date': expiration_date.get('expiration_date'),
+            })
+
+        item.save()
+        link = f'<a href="/app/item/{item_code}" target="_blank">{item_code}</a>'
+        
         return{
             'status': 'success',
-            'message': f'Updated expiration dates of {item_code}'
+            'message': f'Updated expiration dates of {link}'
         } 
 
     except Exception as e:
@@ -150,7 +147,6 @@ def update_row_conversion_factor_by_item_code(receiving, item_table, item_code):
             receiving.save()
             frappe.db.commit()
                 
-
 def update_item_by_item_code(
         item_code,
         item_table, 
@@ -243,6 +239,7 @@ def get_verify_item_data(receiving_name, barcode=None):
 
         if item_code:        
             item_name = get_item_name_from_barcode(barcode)        
+            link = f'<a href="/app/item/{item_code}" target="_blank">{item_code}</a>'
             expected_qty = get_row_details_from_table(item_table, item_code)['expected_qty']
             qty = None 
             scan_uom = get_row_details_from_table(item_table, item_code)['scan_uom']
@@ -253,7 +250,7 @@ def get_verify_item_data(receiving_name, barcode=None):
                 'status': 'success',
                 'verify_barcode': barcode,
                 'verify_item_code': item_code,
-                'verify_item_name': f'{item_code}: {item_name}',
+                'verify_item_name': f'{link}: {item_name}',
                 'verify_expected_qty': expected_qty,
                 'verify_received_qty': received_qty,
                 'verify_qty': qty,
@@ -308,37 +305,17 @@ def get_item_name_from_barcode(barcode):
 
 def get_expiration_dates_by_item_code(item_code):
     try:    
-        expiration_dates = frappe.get_all('Item',
-            filters={'item_code': item_code},
-            fields=[
-                'custom_expiration_date_1', 
-                'custom_expiration_date_2', 
-                'custom_expiration_date_3',
-                'custom_expiration_date_4',
-                'custom_expiration_date_5',
-            ],
-            as_list=True
-        )[0]
+        expiration_dates = frappe.get_doc('Item', item_code).custom_expiration_dates_table
         
         if expiration_dates:
             return{
                 'status': 'success',
-                'message': {
-                    'expiration_date_1': expiration_dates[0], 
-                    'expiration_date_2': expiration_dates[1], 
-                    'expiration_date_3': expiration_dates[2],
-                    'expiration_date_4': expiration_dates[3],
-                    'expiration_date_5': expiration_dates[4],    
-                }
+                'expiration_dates': expiration_dates
             }
 
         return {
             'status': 'success',
-            'expiration_date_1': None, 
-            'expiration_date_2': None, 
-            'expiration_date_3': None,
-            'expiration_date_4': None,
-            'expiration_date_5': None,
+            'expiration_dates': []
         }
 
     except Exception as e:

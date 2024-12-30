@@ -11,6 +11,8 @@
   "posting_time",
   "column_break_pjdx",
   "set_posting_time",
+  "section_break_hwht",
+  "location",
   "section_break_stwc",
   "scan_code",
   "item_code",
@@ -189,6 +191,7 @@
   {
    "fieldname": "add_warehouse",
    "fieldtype": "Button",
+   "hidden": 1,
    "label": "Add Warehouse"
   },
   {
@@ -227,13 +230,27 @@
    "label": "Scan Barcode",
    "print_hide": 1,
    "report_hide": 1
+  },
+  {
+   "fieldname": "section_break_hwht",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "KG Warehouse - JP",
+   "fieldname": "location",
+   "fieldtype": "Select",
+   "ignore_user_permissions": 1,
+   "in_global_search": 1,
+   "label": "Location",
+   "options": "KG Warehouse - JP\nMega Stock - JP\nKG Stock - JP\nMega Retail - JP\nGG Stock - JP\nJPPM Stock - JP\nJPMini Stock - JP\nWS Stock - JP",
+   "set_only_once": 1
   }
  ],
  "force_re_route_to_default_view": 1,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-10-26 12:09:20.210131",
+ "modified": "2024-12-23 09:46:17.857425",
  "modified_by": "Administrator",
  "module": "Stock Audit",
  "name": "Stock Audit",

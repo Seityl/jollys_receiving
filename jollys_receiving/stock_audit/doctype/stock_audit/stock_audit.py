@@ -13,19 +13,24 @@ class StockAudit(StockController):
 
     def validate(self):
         self.validate_posting_time()
-        self.validate_warehouse_priority()
-        self.validate_warehouse_capacity()
+
+        if self.location == 'KG Warehouse - JP':
+            self.validate_warehouse_priority()
+            self.validate_warehouse_capacity()
         
     def before_submit(self):
-        self.validate_erp_qty()
+        self.validate_qty()
         
     def on_submit(self):
         self.update_item_doc()
         self.update_stock_levels()
-        self.set_putaway_rules()
+        
+        if self.location == 'KG Warehouse - JP':
+            self.set_putaway_rules()
 
     def on_update_after_submit(self):
-        self.disable_inactive_putaway_rules()
+        if self.location == 'KG Warehouse - JP':
+            self.disable_inactive_putaway_rules()
 
     def validate_warehouse_capacity(self):
         for warehouse in self.warehouses:
@@ -58,7 +63,7 @@ class StockAudit(StockController):
             elif warehouse.is_in_warehouse:
                 priority_list.append(warehouse.this_priority)
 
-    def validate_erp_qty(self):
+    def validate_qty(self):
         for warehouse in self.warehouses:
             most_recent_bin = frappe.get_all('Bin',
                 filters = {'item_code':  self.item_code, 'warehouse': warehouse.warehouse},
@@ -72,6 +77,12 @@ class StockAudit(StockController):
                 if warehouse.erp_qty != current_erp_qty:
                     warehouse.erp_qty = current_erp_qty
                     
+            if warehouse.is_in_warehouse and warehouse.actual_qty == 0:
+                frappe.throw(
+                    title = 'Error',
+                    msg = _(f'Item is in warehouse {warehouse.warehouse} and Actual Qty is 0.')
+                )
+
     def get_item_data(self):
         if not self.item_code and not self.scan_code:
             frappe.throw(
@@ -101,7 +112,7 @@ class StockAudit(StockController):
         if not item_code:
             frappe.throw(
                 title = 'Invalid Barcode Error',
-                msg = _(f'No item found for barcode {self.scan_code}.')
+                msg = _(f'No item found for barcode {self.scan_code}')
             )
 
         self.item_code = item_code[0][0]
@@ -116,35 +127,49 @@ class StockAudit(StockController):
     def get_item_bins(self):
         bin_list = frappe.get_all('Bin',
             filters = {'item_code':  self.item_code},
-            fields = ['name']
+            fields = ['warehouse', 'actual_qty']
         )
 
         for current_bin in bin_list:
-            current_bin_qty = frappe.db.get_value('Bin', current_bin.name, 'actual_qty')
-
-            # Only return bins where quantity is more than 0. Avoids negative bin quantities and empty bin locations.
             # TODO: Cleanup negative bin locations by making stock 0 using material receipt
             # if current_bin_qty < 1:
             #     self.update_negative_stock(current_bin, current_bin_qty)
 
-            if current_bin_qty > 0:
-                current_bin_warehouse = frappe.db.get_value('Bin', current_bin.name, 'warehouse')
-                current_bin_parent_warehouse = frappe.db.get_value('Warehouse', current_bin_warehouse, 'parent_warehouse')
+            # Only return bins where quantity is more than 0. Avoids negative bin quantities and empty bin locations.
+            if current_bin.actual_qty <= 0:
+                continue
+            
+            if self.location == 'KG Warehouse - JP':
+                reference_rule = self.get_reference_putaway_rule(current_bin.warehouse)
+                current_bin_parent_warehouse = frappe.db.get_value('Warehouse', current_bin.warehouse, 'parent_warehouse')
 
-                if(current_bin_parent_warehouse in kg_warehouses and current_bin_warehouse != 'Stock Audit Warehouse - JP'):  
-                    reference_rule = self.get_reference_putaway_rule(current_bin_warehouse)
-
+                if(current_bin_parent_warehouse in kg_warehouses):  
                     self.append('warehouses', {
                         'item_code': self.item_code,
                         'item_name': self.item_name,
-                        'warehouse': current_bin_warehouse,
-                        'capacity': self.get_warehouse_capacity(current_bin_warehouse),
-                        'erp_qty': current_bin_qty, 
+                        'warehouse': current_bin.warehouse,
+                        'capacity': self.get_warehouse_capacity(current_bin.warehouse),
+                        'erp_qty': current_bin.actual_qty, 
                         'this_priority': reference_rule.get('priority'),
                         'actual_qty': 0,
-                        'is_in_warehouse': True if current_bin_qty > 0 else False,
+                        'is_in_warehouse': True if current_bin.actual_qty > 0 else False,
                         'reference_putaway_rule': reference_rule.get('name')
                     })	
+                    
+            elif current_bin.warehouse == self.location:
+                self.append('warehouses', {
+                    'item_code': self.item_code,
+                    'item_name': self.item_name,
+                    'warehouse': current_bin.warehouse,
+                    'capacity': self.get_warehouse_capacity(current_bin.warehouse),
+                    'erp_qty': current_bin.actual_qty, 
+                    # 'this_priority': reference_rule.get('priority'),
+                    'actual_qty': 0,
+                    'is_in_warehouse': True if current_bin.actual_qty > 0 else False,
+                    # 'reference_putaway_rule': reference_rule.get('name')
+                })	
+
+                break
 
     def get_reference_putaway_rule(self, warehouse):
         putaway_rule = frappe.get_all('Putaway Rule', 
@@ -402,10 +427,10 @@ class StockAudit(StockController):
             'company': 'Jollys Pharmacy Limited',
             'from_warehouse': from_warehouse,
             'to_warehouse': to_warehouse,  
+            'posting_date': self.posting_date,
+            'posting_time': self.posting_time,
             'items': [
                 {
-                    'posting_date': self.posting_date,
-                    'posting_time': self.posting_time,
                     'item_code': self.item_code,
                     'qty': qty,
                     'uom': 'EACH'
@@ -414,7 +439,11 @@ class StockAudit(StockController):
         })
 
         new_material_transfer_doc.insert()
+        new_material_transfer_doc.set_posting_time = 1
+        new_material_transfer_doc.posting_time = self.posting_time
+        new_material_transfer_doc.posting_date = self.posting_date
         new_material_transfer_doc.submit()
+
         row.reference_stock_entry = new_material_transfer_doc.name
         self.save()
         self.add_linked_comment(new_material_transfer_doc, new_doc=True)
@@ -427,8 +456,6 @@ class StockAudit(StockController):
             'to_warehouse': warehouse,  
             'items': [
                 {   
-                    'posting_date': self.posting_date,
-                    'posting_time': self.posting_time,
                     'item_code': self.item_code,
                     'qty': qty,
                     'uom': 'EACH'
@@ -437,7 +464,11 @@ class StockAudit(StockController):
         })
 
         new_material_receipt_doc.insert()
+        new_material_receipt_doc.set_posting_time = 1
+        new_material_receipt_doc.posting_time = self.posting_time
+        new_material_receipt_doc.posting_date = self.posting_date
         new_material_receipt_doc.submit()
+
         row.reference_stock_entry = new_material_receipt_doc.name
         self.save()
         self.add_linked_comment(new_material_receipt_doc, new_doc=True)

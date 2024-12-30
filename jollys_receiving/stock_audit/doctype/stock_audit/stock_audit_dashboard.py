@@ -13,7 +13,6 @@ def get_data():
         },
         "transactions": [
             { 
-				# "label": _("Connected Documents"),
                 "items": [
                     "Item",
                     "Putaway Rule",

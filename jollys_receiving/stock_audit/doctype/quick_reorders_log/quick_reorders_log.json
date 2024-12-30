@@ -1,0 +1,109 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2024-11-13 10:57:21.865987",
+ "default_view": "List",
+ "doctype": "DocType",
+ "document_type": "Document",
+ "engine": "InnoDB",
+ "field_order": [
+  "user",
+  "warehouse",
+  "item",
+  "original_values_section",
+  "o_warehouse_reorder_qty",
+  "column_break_tsbi",
+  "o_warehouse_reorder_level",
+  "updated_values_section",
+  "n_warehouse_reorder_qty",
+  "column_break_tzsn",
+  "n_warehouse_reorder_level"
+ ],
+ "fields": [
+  {
+   "fieldname": "user",
+   "fieldtype": "Data",
+   "label": "User"
+  },
+  {
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "label": "Item",
+   "options": "Item"
+  },
+  {
+   "fieldname": "warehouse",
+   "fieldtype": "Link",
+   "label": "Warehouse",
+   "options": "Warehouse"
+  },
+  {
+   "fieldname": "original_values_section",
+   "fieldtype": "Section Break",
+   "label": "Original Values"
+  },
+  {
+   "fieldname": "o_warehouse_reorder_qty",
+   "fieldtype": "Float",
+   "label": "Warehouse Reorder QTY"
+  },
+  {
+   "fieldname": "column_break_tsbi",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "updated_values_section",
+   "fieldtype": "Section Break",
+   "label": "Updated Values"
+  },
+  {
+   "fieldname": "n_warehouse_reorder_qty",
+   "fieldtype": "Float",
+   "label": "Warehouse Reorder QTY"
+  },
+  {
+   "fieldname": "column_break_tzsn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "n_warehouse_reorder_level",
+   "fieldtype": "Float",
+   "label": "Warehouse Reorder Level"
+  },
+  {
+   "fieldname": "o_warehouse_reorder_level",
+   "fieldtype": "Float",
+   "label": "Warehouse Reorder Level"
+  }
+ ],
+ "hide_toolbar": 1,
+ "in_create": 1,
+ "links": [],
+ "modified": "2024-11-16 11:28:58.251895",
+ "modified_by": "Administrator",
+ "module": "Stock Audit",
+ "name": "Quick Reorders Log",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "search_fields": "user",
+ "show_name_in_global_search": 1,
+ "show_title_field_in_link": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "user"
+}

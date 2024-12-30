@@ -13,6 +13,9 @@ app_license = "mit"
 fixtures = [
     {"dt":"Custom Field","filters":[["name","in",(
         "Stock Entry-custom_reference_receiving",
+        "Material Request-reference_receiving",
+        "Purchase Order-reference_receiving",
+        "Purchase Receipt-reference_receiving",
         "Item-custom_bulk_list"
     )]]}
 ]
@@ -46,9 +49,10 @@ doctype_js = {
     "Material Request" : "public/js/custom_Material Request.js"
 }
 
-# doctype_list_js = {
-#     "Item" : "public/js/custom_Item_list.js"
-# }
+doctype_list_js = {
+    "Material Request" : "public/js/custom_Material Request_list.js",
+    "Item" : "public/js/custom_item_list.js"
+}
 
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -153,7 +157,7 @@ doctype_js = {
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
+scheduler_events = {
 # 	"all": [
 # 		"jollys_receiving.tasks.all"
 # 	],
@@ -169,7 +173,12 @@ doctype_js = {
 # 	"monthly": [
 # 		"jollys_receiving.tasks.monthly"
 # 	],
-# }
+    'cron': {
+        '0 3 * * 1-6': [
+            'jollys_receiving.public.set_picklists.schedule_set_picklists'
+        ]
+    }
+}
 
 # Testing
 # -------

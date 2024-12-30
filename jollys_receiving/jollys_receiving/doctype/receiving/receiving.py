@@ -2,9 +2,17 @@
 # For license information, please see license.txt
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 
 class Receiving(Document):
+    def before_insert(self):
+        if not self.reference_purchase_receipt and not self.reference_purchase_order:
+            frappe.throw(
+                title = 'Alert',
+                msg = _(f'Please get items from Purchase Receipt or Purchase Order')
+            )
+
     def after_insert(self):
         self.attatch_invoice_from_reference_doc()
 
@@ -14,7 +22,7 @@ class Receiving(Document):
     def on_submit(self):
         self.validate_per_received()
 
-    def attatch_invoice_from_reference_doc(self):
+    def attatch_invoice_from_reference_doc(self, attachments=None):
         if self.reference_purchase_receipt:
             attachments = frappe.get_all('File',
                 filters={
@@ -61,9 +69,7 @@ class Receiving(Document):
                 indicator='red'
             )
 
-    def get_total_received_qty(self):
-        total_received_qty = 0
-
+    def get_total_received_qty(self, total_received_qty=0):
         try:
             for row in self.items:
                 row_received_qty = row.qty or 0
@@ -74,9 +80,7 @@ class Receiving(Document):
         except Exception as e:
             frappe.throw(f'Unexpected Error: {e}')
 
-    def get_total_expected_qty(self):
-        total_expected_qty = 0
-
+    def get_total_expected_qty(self, total_expected_qty=0):
         try:
             for row in self.items:
                 row_expected_qty = row.expected_qty or 0

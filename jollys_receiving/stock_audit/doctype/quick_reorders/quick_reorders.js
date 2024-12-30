@@ -80,7 +80,8 @@ frappe.ui.form.on('Quick Reorders', {
 						}
 						fields.forEach(function (field) {
                             frm.set_value(field, r.message[field]);
-						});
+						}); 
+                        frm.fields_dict['warehouse_reorder_level'].input.focus();
 					} else {
                         frm.trigger('clear_fields')
                         frappe.show_alert({
@@ -106,13 +107,18 @@ frappe.ui.form.on('Quick Reorders', {
                     warehouse_reorder_qty: frm.doc.warehouse_reorder_qty
                 },
 				callback: (r) => {
+                    frappe.call({
+                        method: 'jollys_receiving.stock_audit.doctype.quick_reorders.quick_reorders.create_quick_log'
+                    })
                     if (r.message) {
                         frappe.show_alert({
                             message: `Updated ${frm.doc.warehouse} Reorder for <a href="/app/item/${frm.doc.item_code}" target="_blank">${frm.doc.item_code}</a>`,
                             indicator:'green'
                         }, 10);
                         frm.trigger('clear_fields')
+                        frm.fields_dict['item_barcode'].input.focus();
 					} else {
+                        frm.fields_dict['item_barcode'].input.focus();
                         frm.trigger('clear_fields')
                     }
 				},
