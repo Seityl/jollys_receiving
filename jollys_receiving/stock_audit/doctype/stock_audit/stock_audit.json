@@ -26,12 +26,7 @@
   "units_of_measure_section",
   "uoms",
   "expiration_dates_section",
-  "expiration_date_1",
-  "expiration_date_3",
-  "expiration_date_5",
-  "column_break_mwfi",
-  "expiration_date_2",
-  "expiration_date_4",
+  "expiration_dates",
   "barcode_details_section",
   "barcodes",
   "supplier_details_section",
@@ -138,35 +133,6 @@
    "label": "Edit Posting Date and Time"
   },
   {
-   "fieldname": "expiration_date_1",
-   "fieldtype": "Date",
-   "label": "Expiration Date 1"
-  },
-  {
-   "fieldname": "expiration_date_2",
-   "fieldtype": "Date",
-   "label": "Expiration Date 2"
-  },
-  {
-   "fieldname": "expiration_date_3",
-   "fieldtype": "Date",
-   "label": "Expiration Date 3"
-  },
-  {
-   "fieldname": "expiration_date_4",
-   "fieldtype": "Date",
-   "label": "Expiration Date 4"
-  },
-  {
-   "fieldname": "expiration_date_5",
-   "fieldtype": "Date",
-   "label": "Expiration Date 5"
-  },
-  {
-   "fieldname": "column_break_mwfi",
-   "fieldtype": "Column Break"
-  },
-  {
    "fieldname": "posting_details_section",
    "fieldtype": "Section Break",
    "hidden": 1,
@@ -244,13 +210,19 @@
    "label": "Location",
    "options": "KG Warehouse - JP\nMega Stock - JP\nKG Stock - JP\nMega Retail - JP\nGG Stock - JP\nJPPM Stock - JP\nJPMini Stock - JP\nWS Stock - JP",
    "set_only_once": 1
+  },
+  {
+   "fieldname": "expiration_dates",
+   "fieldtype": "Table",
+   "label": "Expiration Dates",
+   "options": "Stock Audit Expiration Date"
   }
  ],
  "force_re_route_to_default_view": 1,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-12-23 09:46:17.857425",
+ "modified": "2025-01-03 13:39:53.971546",
  "modified_by": "Administrator",
  "module": "Stock Audit",
  "name": "Stock Audit",

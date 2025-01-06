@@ -273,51 +273,6 @@ def create_purchase_order(source_name, target_doc=None):
     
     return doclist
 
-# @frappe.whitelist()
-# def make_purchase_receipt_from_receiving(source_name, target_doc=None):
-# 	def update_item(obj, target, source_parent):
-# 		target.qty = flt(obj.qty) - flt(obj.received_qty)
-# 		target.stock_qty = (flt(obj.qty) - flt(obj.received_qty)) * flt(obj.conversion_factor)
-# 		target.amount = (flt(obj.qty) - flt(obj.received_qty)) * flt(obj.rate)
-# 		target.base_amount = (
-# 			(flt(obj.qty) - flt(obj.received_qty)) * flt(obj.rate) * flt(source_parent.conversion_rate)
-# 		)
-
-# 	doc = get_mapped_doc(
-# 		"Purchase Order",
-# 		source_name,
-# 		{
-# 			"Purchase Order": {
-# 				"doctype": "Purchase Receipt",
-# 				"field_map": {"supplier_warehouse": "supplier_warehouse"},
-# 				"validation": {
-# 					"docstatus": ["=", 1],
-# 				},
-# 			},
-# 			"Purchase Order Item": {
-# 				"doctype": "Purchase Receipt Item",
-# 				"field_map": {
-# 					"name": "purchase_order_item",
-# 					"parent": "purchase_order",
-# 					"bom": "bom",
-# 					"material_request": "material_request",
-# 					"material_request_item": "material_request_item",
-# 					"sales_order": "sales_order",
-# 					"sales_order_item": "sales_order_item",
-# 					"wip_composite_asset": "wip_composite_asset",
-# 				},
-# 				"postprocess": update_item,
-# 				"condition": lambda doc: abs(doc.received_qty) < abs(doc.qty)
-# 				and doc.delivered_by_supplier != 1,
-# 			},
-# 			"Purchase Taxes and Charges": {"doctype": "Purchase Taxes and Charges", "add_if_empty": True},
-# 		},
-# 		target_doc,
-# 		set_missing_values,
-# 	)
-
-# 	return doc
-
 @frappe.whitelist()
 def make_receiving_from_purchase_receipt(source_name, target_doc=None):
     doclist = get_mapped_doc(
@@ -428,26 +383,35 @@ def get_item_uoms(doctype, txt, searchfield, start, page_len, filters):
 		as_list=1,
 	)
 
-# @frappe.whitelist()
-# @frappe.validate_and_sanitize_search_inputs
-# def get_item_by_barcode(doctype, txt, searchfield, start, page_len, filters):
-# 	return frappe.get_all(
-# 		"Item Barcode",
-# 		filters={"barcode": ("like", f"{txt}%")},
-# 		fields=["parent"],
-# 		as_list=1,
-# 	)
-
-# from frappe import get_list
-
 @frappe.whitelist()
 def check_warehouse_exists(warehouse_name):
-    warehouse = frappe.get_doc("Warehouse", warehouse_name)
+    try: 
+        exists = frappe.db.get_all('Warehouse', filters={'warehouse_name': warehouse_name}, fields=['name'])
+        if exists:
+            return {
+                'status': 'success'
+            }
+        return {
+            'status': 'error', 
+            'message': 'Warehouse does not exist'
+        }
 
-    if warehouse:
-        return {"exists": True}
-    
-    return {"exists": False}
+    except Exception as e:
+        return {
+            'status': 'error', 
+            'message': f'{e}'
+        }
+
+@frappe.whitelist()
+def get_erp_warehouse(warehouse_name):
+    try: 
+        return frappe.db.get_all('Warehouse', filters={'warehouse_name': ['like', f'%{warehouse_name}%']}, fields=['name'])[0].name
+        
+    except Exception as e:
+        return {
+            'status': 'error', 
+            'message': f'{e}'
+        }
 
 # @frappe.whitelist()
 # @frappe.validate_and_sanitize_search_inputs

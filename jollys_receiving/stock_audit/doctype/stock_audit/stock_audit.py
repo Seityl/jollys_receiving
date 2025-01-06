@@ -5,7 +5,23 @@ import frappe
 from frappe import _
 from erpnext.controllers.stock_controller import StockController
 
-kg_warehouses = ['KG Warehouse - JP','KG Stationary - JP','KG Pets - JP','KG Personal Care - JP','KG OTC - JP','KG Oral - JP','KG Household - JP','KG Haircare - JP','KG FOOD_SNACK - JP','KG Flour Room - JP','KG Drinks - JP','KG Cosmetics - JP','KG Chinatown - JP','KG Baby - JP','KG Flour Room - JP']
+kg_warehouses = [
+    'KG Warehouse - JP',
+    'KG Stationary - JP',
+    'KG Pets - JP',
+    'KG Personal Care - JP',
+    'KG OTC - JP',
+    'KG Oral - JP',
+    'KG Household - JP',
+    'KG Haircare - JP',
+    'KG FOOD_SNACK - JP',
+    'KG Flour Room - JP',
+    'KG Drinks - JP',
+    'KG Cosmetics - JP',
+    'KG Chinatown - JP',
+    'KG Baby - JP',
+    'KG Flour Room - JP'
+]
 
 class StockAudit(StockController):
     def after_insert(self):
@@ -231,14 +247,8 @@ class StockAudit(StockController):
             })	
         
     def get_expiration_dates(self):
-        item_doc = frappe.get_doc('Item', self.item_code)
+        self.expiration_dates = frappe.get_doc('Item', self.item_code).custom_expiration_dates_table
 
-        self.expiration_date_1 = item_doc.custom_expiration_date_1 
-        self.expiration_date_2 = item_doc.custom_expiration_date_2 
-        self.expiration_date_3 = item_doc.custom_expiration_date_3 
-        self.expiration_date_4 = item_doc.custom_expiration_date_4 
-        self.expiration_date_5 = item_doc.custom_expiration_date_5
-    
     def get_uoms(self):
         uoms = frappe.get_doc('Item', self.item_code).uoms
 
@@ -307,6 +317,22 @@ class StockAudit(StockController):
             return True
             
         return False
+    
+    def update_expiration_dates(self, item_doc, self_expiration_dates):
+        existing_expiration_dates = [expiration_date for expiration_date in item_doc.custom_expiration_dates_table]
+        new_expiration_dates = [expiration_date for expiration_date in self_expiration_dates]
+
+        if existing_expiration_dates != new_expiration_dates:
+            item_doc.custom_expiration_dates_table.clear()
+
+            for expiration_date in self_expiration_dates:
+                item_doc.append('custom_expiration_dates_table', {
+                    'expiration_date': expiration_date.expiration_date
+                })
+
+            return True
+        
+        return False
 
     def update_item_doc(self):
         item_doc = frappe.get_doc('Item', self.item_code)
@@ -320,31 +346,32 @@ class StockAudit(StockController):
             item_doc.description = self.item_description
             updated = True
 
-        if (item_doc.custom_expiration_date_1 != self.expiration_date_1):
-            item_doc.custom_expiration_date_1 = self.expiration_date_1
-            updated = True
+        # if (item_doc.custom_expiration_date_1 != self.expiration_date_1):
+        #     item_doc.custom_expiration_date_1 = self.expiration_date_1
+        #     updated = True
             
-        if (item_doc.custom_expiration_date_2 != self.expiration_date_2):
-            item_doc.custom_expiration_date_2 = self.expiration_date_2
-            updated = True
+        # if (item_doc.custom_expiration_date_2 != self.expiration_date_2):
+        #     item_doc.custom_expiration_date_2 = self.expiration_date_2
+        #     updated = True
             
-        if (item_doc.custom_expiration_date_3 != self.expiration_date_3):
-            item_doc.custom_expiration_date_3 = self.expiration_date_3
-            updated = True
+        # if (item_doc.custom_expiration_date_3 != self.expiration_date_3):
+        #     item_doc.custom_expiration_date_3 = self.expiration_date_3
+        #     updated = True
             
-        if (item_doc.custom_expiration_date_4 != self.expiration_date_4):
-            item_doc.custom_expiration_date_4 = self.expiration_date_4
-            updated = True
+        # if (item_doc.custom_expiration_date_4 != self.expiration_date_4):
+        #     item_doc.custom_expiration_date_4 = self.expiration_date_4
+        #     updated = True
 
-        if (item_doc.custom_expiration_date_5 != self.expiration_date_5):
-            item_doc.custom_expiration_date_5 = self.expiration_date_5
-            updated = True
+        # if (item_doc.custom_expiration_date_5 != self.expiration_date_5):
+        #     item_doc.custom_expiration_date_5 = self.expiration_date_5
+        #     updated = True
 
         # Only update child tables if change has been made
 
         updated |= self.update_supplier_items(item_doc, self.supplier_items)
         updated |= self.update_barcodes(item_doc, self.barcodes)
         updated |= self.update_uoms(item_doc, self.uoms)
+        updated |= self.update_expiration_dates(item_doc, self.expiration_dates)
 
         if updated:
             item_doc.save()
@@ -483,7 +510,7 @@ class StockAudit(StockController):
             'priority': priority,
             'uom': frappe.db.get_value("Item", self.item_code, "stock_uom")
         })
-
+        new_putaway_rule_doc.ignore_validate = True
         new_putaway_rule_doc.insert()
         row.reference_putaway_rule = new_putaway_rule_doc.name
         self.save()
