@@ -49,10 +49,10 @@ doctype_js = {
     "Material Request" : "public/js/custom_Material Request.js"
 }
 
-doctype_list_js = {
-    "Material Request" : "public/js/custom_Material Request_list.js",
-    "Item" : "public/js/custom_item_list.js"
-}
+# doctype_list_js = {
+#     "Material Request" : "public/js/custom_Material Request_list.js",
+#     "Item" : "public/js/custom_item_list.js"
+# }
 
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -174,7 +174,7 @@ scheduler_events = {
 # 		"jollys_receiving.tasks.monthly"
 # 	],
     'cron': {
-        '0 3 * * 1-6': [
+        '0 4 * * *': [
             'jollys_receiving.public.set_picklists.schedule_set_picklists'
         ]
     }
