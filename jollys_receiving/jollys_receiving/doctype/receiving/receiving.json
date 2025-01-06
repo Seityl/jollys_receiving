@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_import": 1,
- "autoname": "format:{supplier_name}-{reference_purchase_receipt}",
+ "autoname": "format:{supplier_name}-{reference_purchase_receipt}-{#}",
  "creation": "2024-09-21 11:41:31.148586",
  "default_view": "List",
  "doctype": "DocType",
