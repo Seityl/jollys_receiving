@@ -48,6 +48,9 @@ class StockAudit(StockController):
         if self.location == 'KG Warehouse - JP':
             self.disable_inactive_putaway_rules()
 
+    def on_cancel(self):
+        self.revert_changes()
+        
     def validate_warehouse_capacity(self):
         for warehouse in self.warehouses:
             if warehouse.is_in_warehouse and warehouse.capacity < warehouse.actual_qty:
@@ -93,11 +96,28 @@ class StockAudit(StockController):
                 if warehouse.erp_qty != current_erp_qty:
                     warehouse.erp_qty = current_erp_qty
                     
-            if warehouse.is_in_warehouse and warehouse.actual_qty == 0:
-                frappe.throw(
-                    title = 'Error',
-                    msg = _(f'Item is in warehouse {warehouse.warehouse} and Actual Qty is 0.')
-                )
+            if warehouse.is_stored_here:
+                if warehouse.is_in_warehouse and warehouse.actual_qty == 0:
+                    frappe.throw(
+                        title = 'Error',
+                        msg = _(f'Item is in warehouse {warehouse.warehouse} and Actual Qty is 0.')
+                    )
+
+    def set_item_code(self):
+        item_code = frappe.get_all('Item',
+            filters = {'barcode': self.scan_code},
+            fields = ['item_code'],
+            as_list = True
+        )
+        
+        if not item_code:
+            frappe.throw(
+                title = 'Invalid Barcode Error',
+                msg = _(f'No item found for barcode {self.scan_code}')
+            )
+
+        self.item_code = item_code[0][0]
+        self.save()
 
     def get_item_data(self):
         if not self.item_code and not self.scan_code:
@@ -118,27 +138,13 @@ class StockAudit(StockController):
         self.get_uoms()
         self.save()		
 
-    def set_item_code(self):
-        item_code = frappe.get_all('Item',
-            filters = {'barcode': self.scan_code},
-            fields = ['item_code'],
-            as_list = True
-        )
-        
-        if not item_code:
-            frappe.throw(
-                title = 'Invalid Barcode Error',
-                msg = _(f'No item found for barcode {self.scan_code}')
-            )
-
-        self.item_code = item_code[0][0]
-        self.save()
-
     def get_item_name(self):
         self.item_name = frappe.db.get_value('Item', self.item_code, 'item_name')		
+        self.original_item_name = frappe.db.get_value('Item', self.item_code, 'item_name')		
 
     def get_item_description(self):
         self.item_description = frappe.db.get_value('Item', self.item_code, 'description')		
+        self.original_item_description = frappe.db.get_value('Item', self.item_code, 'description')		
 
     def get_item_bins(self):
         bin_list = frappe.get_all('Bin',
@@ -169,6 +175,7 @@ class StockAudit(StockController):
                         'this_priority': reference_rule.get('priority'),
                         'actual_qty': 0,
                         'is_in_warehouse': True if current_bin.actual_qty > 0 else False,
+                        'is_stored_here': True if current_bin.actual_qty > 0 else False,
                         'reference_putaway_rule': reference_rule.get('name')
                     })	
                     
@@ -179,10 +186,9 @@ class StockAudit(StockController):
                     'warehouse': current_bin.warehouse,
                     'capacity': self.get_warehouse_capacity(current_bin.warehouse),
                     'erp_qty': current_bin.actual_qty, 
-                    # 'this_priority': reference_rule.get('priority'),
                     'actual_qty': 0,
                     'is_in_warehouse': True if current_bin.actual_qty > 0 else False,
-                    # 'reference_putaway_rule': reference_rule.get('name')
+                    'is_stored_here': True if current_bin.actual_qty > 0 else False
                 })	
 
                 break
@@ -231,6 +237,11 @@ class StockAudit(StockController):
                 'supplier': current_supplier,
                 'supplier_part_no': current_supplier_part_no,
             })	
+
+            self.append('original_supplier_items', {
+                'supplier': current_supplier,
+                'supplier_part_no': current_supplier_part_no,
+            })	
         
     def get_barcodes(self):
         barcodes = frappe.get_doc('Item', self.item_code).barcodes
@@ -245,9 +256,26 @@ class StockAudit(StockController):
                 'barcode_type': barcode_type,
                 'uom': uom
             })	
+
+            self.append('original_barcodes', {
+                'barcode': barcode,
+                'barcode_type': barcode_type,
+                'uom': uom
+            })	
         
     def get_expiration_dates(self):
-        self.expiration_dates = frappe.get_doc('Item', self.item_code).custom_expiration_dates_table
+        expiration_dates = frappe.get_doc('Item', self.item_code).custom_expiration_dates_table
+
+        for current_expiration_date in expiration_dates:
+            expiration_date = current_expiration_date.expiration_date
+
+            self.append('expiration_dates', {
+                'expiration_date': expiration_date,
+            })	
+
+            self.append('original_expiration_dates', {
+                'expiration_date': expiration_date,
+            })
 
     def get_uoms(self):
         uoms = frappe.get_doc('Item', self.item_code).uoms
@@ -257,6 +285,11 @@ class StockAudit(StockController):
             conversion_factor = current_uom.conversion_factor
 
             self.append('uoms', {
+                'uom': uom,
+                'conversion_factor': conversion_factor,
+            })
+
+            self.append('original_uoms', {
                 'uom': uom,
                 'conversion_factor': conversion_factor,
             })
@@ -346,26 +379,6 @@ class StockAudit(StockController):
             item_doc.description = self.item_description
             updated = True
 
-        # if (item_doc.custom_expiration_date_1 != self.expiration_date_1):
-        #     item_doc.custom_expiration_date_1 = self.expiration_date_1
-        #     updated = True
-            
-        # if (item_doc.custom_expiration_date_2 != self.expiration_date_2):
-        #     item_doc.custom_expiration_date_2 = self.expiration_date_2
-        #     updated = True
-            
-        # if (item_doc.custom_expiration_date_3 != self.expiration_date_3):
-        #     item_doc.custom_expiration_date_3 = self.expiration_date_3
-        #     updated = True
-            
-        # if (item_doc.custom_expiration_date_4 != self.expiration_date_4):
-        #     item_doc.custom_expiration_date_4 = self.expiration_date_4
-        #     updated = True
-
-        # if (item_doc.custom_expiration_date_5 != self.expiration_date_5):
-        #     item_doc.custom_expiration_date_5 = self.expiration_date_5
-        #     updated = True
-
         # Only update child tables if change has been made
 
         updated |= self.update_supplier_items(item_doc, self.supplier_items)
@@ -377,12 +390,15 @@ class StockAudit(StockController):
             item_doc.save()
             self.add_linked_comment(item_doc)
 
-    def add_linked_comment(self, doc, new_doc=False):
+    def add_linked_comment(self, doc, new_doc=False, reverted=False):
         url = f'/app/stock-audit/{self.name}'
         link = f'<a href="{url}" target="_blank">{self.name}</a>'
 
         if new_doc:
             doc.add_comment('Info', f'Created Via Stock Audit {link}')
+
+        elif reverted:
+            doc.add_comment('Info', f'Changed Reverted From Stock Audit {link}')
 
         else:
             doc.add_comment('Info', f'Details Updated Via Stock Audit {link}')
@@ -419,12 +435,15 @@ class StockAudit(StockController):
                     self.create_material_receipt(warehouse, warehouse.warehouse, difference_qty)
 
     def update_putaway_rule(self, putaway_rule_doc, warehouse, updated=False):
-        if not warehouse.is_in_warehouse:
+        if not warehouse.is_stored_here:
             if(putaway_rule_doc.disable == 0):
                 putaway_rule_doc.disable = 1
                 putaway_rule_doc.priority = warehouse.this_priority
+                putaway_rule_doc.capacity = warehouse.capacity
                 putaway_rule_doc.save()
                 self.add_linked_comment(putaway_rule_doc)
+                warehouse.reference_putaway_rule = putaway_rule_doc.name
+                self.save()
 
             return
          
@@ -442,6 +461,8 @@ class StockAudit(StockController):
 
         if updated:
             putaway_rule_doc.save()
+            warehouse.reference_putaway_rule = putaway_rule_doc.name
+            self.save()
             self.add_linked_comment(putaway_rule_doc)
 
     def create_material_transfer(self, row, from_warehouse, qty:int, to_warehouse=None, is_excess=False):
@@ -518,7 +539,7 @@ class StockAudit(StockController):
 
     def set_putaway_rules(self):
         for warehouse in self.warehouses:
-            if not warehouse.is_in_warehouse:
+            if not warehouse.is_in_warehouse and not warehouse.is_stored_here:
                 putaway_rule = frappe.get_all('Putaway Rule', 
                     filters = {'item_code': self.item_code, 'warehouse': warehouse.warehouse},
                     fields = ['name']
@@ -561,7 +582,6 @@ class StockAudit(StockController):
                 if warehouse.is_new_warehouse:
                     self.create_material_receipt(warehouse, warehouse.warehouse, warehouse.actual_qty)
         
-    # TODO: compare all putaway rules for an audit to those which are linked to it and disable those which are not linked
     def disable_inactive_putaway_rules(self):
         active_putaway_rules = set()
     
@@ -585,3 +605,58 @@ class StockAudit(StockController):
                     doc.disable = 1
                     doc.save()
                     self.add_linked_comment(doc)
+    
+    def revert_changes(self):
+        item_doc = frappe.get_doc('Item', self.item_code)
+        updated = False
+
+        if (item_doc.item_name != self.original_item_name):
+            item_doc.item_name = self.original_item_name
+            updated = True
+
+        if (item_doc.description != self.original_item_description):
+            item_doc.description = self.original_item_description
+            updated = True
+
+        # Only update child tables if change has been made
+
+        updated |= self.update_supplier_items(item_doc, self.original_supplier_items)
+        updated |= self.update_barcodes(item_doc, self.original_barcodes)
+        updated |= self.update_uoms(item_doc, self.original_uoms)
+        updated |= self.update_expiration_dates(item_doc, self.original_expiration_dates)
+
+        if updated:
+            item_doc.save()
+            self.add_linked_comment(item_doc, reverted=True)
+
+        linked_stock_entries = set()
+        linked_putaway_rules = set()
+    
+        for warehouse in self.warehouses:
+            if warehouse.reference_stock_entry:
+                linked_stock_entries.add(warehouse.reference_stock_entry)
+
+            if warehouse.reference_putaway_rule:
+                linked_putaway_rules.add(warehouse.reference_putaway_rule)
+
+        for stock_entry in linked_stock_entries:
+            doc = frappe.get_doc('Stock Entry', stock_entry)
+            
+            if doc.docstatus == 0:
+                continue
+
+            elif doc.docstatus == 1:
+                doc.docstatus = 2
+                doc.save()
+                self.add_linked_comment(doc, reverted=True)
+
+        for putaway_rule in linked_putaway_rules:
+            doc = frappe.get_doc('Putaway Rule', putaway_rule)
+
+            if doc.disable == 0:
+                doc.disable = 1
+                doc.save()
+                self.add_linked_comment(doc, reverted=True)
+
+            else:
+                continue

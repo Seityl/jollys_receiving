@@ -18,19 +18,25 @@
   "item_code",
   "column_break_nken",
   "item_name",
+  "original_item_name",
   "section_break_rrxi",
   "item_description",
+  "original_item_description",
   "warehouse_details_section",
   "warehouses",
   "add_warehouse",
   "units_of_measure_section",
   "uoms",
+  "original_uoms",
   "expiration_dates_section",
   "expiration_dates",
+  "original_expiration_dates",
   "barcode_details_section",
   "barcodes",
+  "original_barcodes",
   "supplier_details_section",
   "supplier_items",
+  "original_supplier_items",
   "more_info_tab",
   "amended_from",
   "connections_tab"
@@ -216,13 +222,59 @@
    "fieldtype": "Table",
    "label": "Expiration Dates",
    "options": "Stock Audit Expiration Date"
+  },
+  {
+   "fieldname": "original_item_name",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Original Item Name",
+   "print_hide": 1
+  },
+  {
+   "fieldname": "original_item_description",
+   "fieldtype": "Text Editor",
+   "hidden": 1,
+   "label": "Original Item Description",
+   "read_only": 1
+  },
+  {
+   "fieldname": "original_uoms",
+   "fieldtype": "Table",
+   "hidden": 1,
+   "label": "Original UOMs",
+   "options": "Stock Audit UOM",
+   "read_only": 1
+  },
+  {
+   "fieldname": "original_expiration_dates",
+   "fieldtype": "Table",
+   "hidden": 1,
+   "label": "Original Expiration Dates",
+   "options": "Stock Audit Expiration Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "original_barcodes",
+   "fieldtype": "Table",
+   "hidden": 1,
+   "label": "Original Barcodes",
+   "options": "Stock Audit Barcode",
+   "read_only": 1
+  },
+  {
+   "fieldname": "original_supplier_items",
+   "fieldtype": "Table",
+   "hidden": 1,
+   "label": "Original Supplier Items",
+   "options": "Stock Audit Supplier",
+   "read_only": 1
   }
  ],
  "force_re_route_to_default_view": 1,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-01-03 13:39:53.971546",
+ "modified": "2025-01-06 11:54:58.118087",
  "modified_by": "Administrator",
  "module": "Stock Audit",
  "name": "Stock Audit",

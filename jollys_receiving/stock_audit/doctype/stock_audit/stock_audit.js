@@ -12,10 +12,12 @@ frappe.ui.form.on('Stock Audit', {
         frm.set_df_property('warehouses', 'cannot_delete_rows', 1);
         
         if(frm.doc.location != 'KG Warehouse - JP') {
-            frm.fields_dict.warehouses.grid.update_docfield_property('this_priority', "hidden", 1);
-            frm.fields_dict.warehouses.grid.update_docfield_property('capacity', "hidden", 1);
-            frm.fields_dict.warehouses.grid.update_docfield_property('capacity', "read_only", 1);
-            frm.fields_dict.warehouses.grid.update_docfield_property('capacity', "read_only", 1);
+            frm.fields_dict.warehouses.grid.update_docfield_property('this_priority', 'hidden', 1);
+            frm.fields_dict.warehouses.grid.update_docfield_property('capacity', 'hidden', 1);
+            frm.fields_dict.warehouses.grid.update_docfield_property('is_stored_here', 'hidden', 1);
+            frm.fields_dict.warehouses.grid.update_docfield_property('capacity', 'read_only', 1);
+            frm.fields_dict.warehouses.grid.update_docfield_property('this_priority', 'read_only', 1);
+            frm.fields_dict.warehouses.grid.update_docfield_property('is_stored_here', 'read_only', 1);
         }
     },
     
@@ -101,8 +103,8 @@ frappe.ui.form.on('Stock Audit', {
             size: 'small',
             primary_action_label: 'Add',
             primary_action(values) {
-                let existing_warehouse = frm.doc.warehouses.find(warehouse => warehouse.warehouse === values.warehouse);
-    
+                let existing_warehouse = frm.doc.warehouses.find(warehouse => warehouse.warehouse.toLowerCase().includes(values.warehouse.toLowerCase()));
+
                 if (existing_warehouse) {
                     frappe.msgprint('The selected warehouse is already warehouse list.');
                     return;
@@ -131,6 +133,7 @@ frappe.ui.form.on('Stock Audit', {
                             this_priority: values.priority,
                             actual_qty: values.actual_qty,
                             is_in_warehouse: true,
+                            is_stored_here: true,
                             is_new_warehouse: true,
                             erp_qty: erp_qty 
                         });
@@ -177,15 +180,28 @@ frappe.ui.form.on('Stock Audit Location', {
     is_in_warehouse: function(frm, cdt, cdn) {
         const row = locals[cdt][cdn];
 
-        if(!row.is_in_warehouse) {
+        if(!row.is_in_warehouse && row.is_stored_here) {
             frappe.model.set_value(cdt, cdn, 'actual_qty', 0);
             frm.fields_dict['warehouses'].grid.grid_rows_by_docname[cdn].toggle_editable('actual_qty', false);
+            frm.fields_dict['warehouses'].grid.grid_rows_by_docname[cdn].toggle_editable('is_stored_here', true);
+        } else {
+            frm.fields_dict['warehouses'].grid.grid_rows_by_docname[cdn].toggle_editable('actual_qty', true);
+            frm.fields_dict['warehouses'].grid.grid_rows_by_docname[cdn].toggle_editable('capacity', true);
+            frm.fields_dict['warehouses'].grid.grid_rows_by_docname[cdn].toggle_editable('this_priority', true);
+            frm.fields_dict['warehouses'].grid.grid_rows_by_docname[cdn].toggle_editable('is_stored_here', false);
+            frappe.model.set_value(cdt, cdn, 'is_stored_here', 1);
+        }
+    },
+
+    is_stored_here: function(frm, cdt, cdn) {
+        const row = locals[cdt][cdn];
+
+        if(!row.is_stored_here) {
             frappe.model.set_value(cdt, cdn, 'capacity', 0);
             frm.fields_dict['warehouses'].grid.grid_rows_by_docname[cdn].toggle_editable('capacity', false);
             frappe.model.set_value(cdt, cdn, 'this_priority', 0);
             frm.fields_dict['warehouses'].grid.grid_rows_by_docname[cdn].toggle_editable('this_priority', false);
         } else {
-            frm.fields_dict['warehouses'].grid.grid_rows_by_docname[cdn].toggle_editable('actual_qty', true);
             frm.fields_dict['warehouses'].grid.grid_rows_by_docname[cdn].toggle_editable('capacity', true);
             frm.fields_dict['warehouses'].grid.grid_rows_by_docname[cdn].toggle_editable('this_priority', true);
         }
