@@ -2,8 +2,59 @@ import frappe
 from frappe import _
 from typing import Optional, Union
 from frappe.model.mapper import get_mapped_doc
-from frappe.utils import cint, cstr, flt, get_link_to_form
 from .scanner import update_row_conversion_factor_by_item_code, update_not_verified_scan, get_verify_item_data, update_verified_scan, update_uom_conversion_factor, get_received_qty_from_row, get_expiration_dates_by_item_code, update_expiration_dates_by_item_code
+
+@frappe.whitelist()
+def get_erp_warehouse(warehouse_name):
+    try: 
+        return frappe.db.get_all('Warehouse', filters={'warehouse_name': ['like', f'%{warehouse_name}%']}, fields=['name'])[0].name
+        
+    except Exception as e:
+        return {
+            'status': 'error', 
+            'message': f'{e}'
+        }
+
+@frappe.whitelist()
+def get_erp_qty(stock_audit, warehouse):
+    stock_audit = frappe.get_doc('Stock Audit', stock_audit)
+
+    most_recent_bin = frappe.get_all('Bin',
+            filters = {'item_code':  stock_audit.item_code, 'warehouse': warehouse},
+            fields = ['name'],
+            order_by = 'creation'
+        )
+
+    if most_recent_bin: 
+        current_erp_qty = frappe.db.get_value('Bin', most_recent_bin[0].name, 'actual_qty')
+        return current_erp_qty
+
+    return 0
+
+@frappe.whitelist()
+def get_item_code_from_barcode(barcode):
+    item = frappe.get_all('Item',
+        filters={'barcode': barcode},
+        fields=['item_code'],
+        as_list=True
+    )
+    
+    if item:
+        return item[0][0]
+
+    return None
+
+@frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
+def get_item_uoms(doctype, txt, searchfield, start, page_len, filters):
+	items = [filters.get("value")]
+
+	return frappe.get_all(
+		"UOM Conversion Detail",
+		filters={"parent": ("in", items), "uom": ("like", f"{txt}%")},
+		fields=["uom"],
+		as_list=1,
+	)
 
 @frappe.whitelist()
 def fetch_purchase_receipt_details(purchase_receipt_name):
@@ -18,6 +69,7 @@ def fetch_purchase_receipt_details(purchase_receipt_name):
                 'purchase_receipt_supplier_name': purchase_receipt_doc.supplier_name,
                 'purchase_receipt_items': purchase_receipt_doc.items
             }
+
         except:
             return {'status': 'error'}
 
@@ -343,47 +395,6 @@ def make_receiving_from_purchase_order(source_name, target_doc=None):
     return doclist
 
 @frappe.whitelist()
-def get_erp_qty(stock_audit, warehouse):
-    stock_audit = frappe.get_doc('Stock Audit', stock_audit)
-
-    most_recent_bin = frappe.get_all('Bin',
-            filters = {'item_code':  stock_audit.item_code, 'warehouse': warehouse},
-            fields = ['name'],
-            order_by = 'creation'
-        )
-
-    if most_recent_bin: 
-        current_erp_qty = frappe.db.get_value('Bin', most_recent_bin[0].name, 'actual_qty')
-        return current_erp_qty
-
-    return 0
-
-@frappe.whitelist()
-def get_item_code_from_barcode(barcode):
-    item = frappe.get_all('Item',
-        filters={'barcode': barcode},
-        fields=['item_code'],
-        as_list=True
-    )
-    
-    if item:
-        return item[0][0]
-
-    return None
-
-@frappe.whitelist()
-@frappe.validate_and_sanitize_search_inputs
-def get_item_uoms(doctype, txt, searchfield, start, page_len, filters):
-	items = [filters.get("value")]
-
-	return frappe.get_all(
-		"UOM Conversion Detail",
-		filters={"parent": ("in", items), "uom": ("like", f"{txt}%")},
-		fields=["uom"],
-		as_list=1,
-	)
-
-@frappe.whitelist()
 def check_warehouse_exists(warehouse_name):
     try: 
         exists = frappe.db.get_all('Warehouse', filters={'warehouse_name': warehouse_name}, fields=['name'])
@@ -402,16 +413,6 @@ def check_warehouse_exists(warehouse_name):
             'message': f'{e}'
         }
 
-@frappe.whitelist()
-def get_erp_warehouse(warehouse_name):
-    try: 
-        return frappe.db.get_all('Warehouse', filters={'warehouse_name': ['like', f'%{warehouse_name}%']}, fields=['name'])[0].name
-        
-    except Exception as e:
-        return {
-            'status': 'error', 
-            'message': f'{e}'
-        }
 
 # @frappe.whitelist()
 # @frappe.validate_and_sanitize_search_inputs

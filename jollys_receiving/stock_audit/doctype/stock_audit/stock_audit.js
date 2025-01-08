@@ -22,6 +22,11 @@ frappe.ui.form.on('Stock Audit', {
     },
     
     refresh: function(frm) {
+        // Hides Add Row button from warehouses child table
+        frm.get_field('warehouses').grid.cannot_add_rows = true;
+        // Hides Delete button from warehouses child table
+        frm.set_df_property('warehouses', 'cannot_delete_rows', 1);
+
         if(frm.is_new()) {
             frm.fields_dict.scan_code.input.focus();
         }
@@ -67,6 +72,7 @@ frappe.ui.form.on('Stock Audit', {
             frm.set_df_property('posting_date', 'read_only', 1);
             frm.set_df_property('posting_time', 'read_only', 1);
         }
+        
         frm.refresh_field('posting_date');
         frm.refresh_field('posting_time');
     },
@@ -104,50 +110,69 @@ frappe.ui.form.on('Stock Audit', {
             primary_action_label: 'Add',
             primary_action(values) {
                 let existing_warehouse = frm.doc.warehouses.find(warehouse => warehouse.warehouse.toLowerCase().includes(values.warehouse.toLowerCase()));
+                let valid_warehouse = false;
 
                 if (existing_warehouse) {
                     frappe.msgprint('The selected warehouse is already warehouse list.');
                     return;
                 }
 
-                let erp_qty = frappe.call({
-                    method: 'jollys_receiving.api.get_erp_qty',
-                    args: {
-                        stock_audit: frm.doc.name,
-                        warehouse: values.warehouse
-                    }
-                });
-
                 frappe.call({
-                    method: 'jollys_receiving.api.get_erp_warehouse',
+                    method: 'jollys_receiving.api.check_warehouse_exists',
                     args: {
                         warehouse_name: values.warehouse
                     },
                     callback: function(r) {
-                        let erp_warehouse = r.message
-                        let warehouse = frm.add_child('warehouses', {
-                            item_code: frm.doc.item_code,
-                            item_name: frm.doc.item_name,
-                            warehouse: erp_warehouse,
-                            capacity: values.capacity,
-                            this_priority: values.priority,
-                            actual_qty: values.actual_qty,
-                            is_in_warehouse: true,
-                            is_stored_here: true,
-                            is_new_warehouse: true,
-                            erp_qty: erp_qty 
+                        if(r.message['status']){
+                            if(r.message['status'] == 'error') {
+                                frappe.throw(__(r.message['message']));
+                                return;
+                            }
+                            valid_warehouse = true;
+                        }
+                    }
+                }).then( () => {
+                    if(valid_warehouse) {
+                        let erp_qty = frappe.call({
+                            method: 'jollys_receiving.api.get_erp_qty',
+                            args: {
+                                stock_audit: frm.doc.name,
+                                warehouse: values.warehouse
+                            }
                         });
-                        
-                        frm.refresh_field('warehouses');
-                        dialog.hide();
+        
+                        frappe.call({
+                            method: 'jollys_receiving.api.get_erp_warehouse',
+                            args: {
+                                warehouse_name: values.warehouse
+                            },
+                            callback: function(r) {
+                                let erp_warehouse = r.message;
+                                let warehouse = frm.add_child('warehouses', {
+                                    item_code: frm.doc.item_code,
+                                    item_name: frm.doc.item_name,
+                                    warehouse: erp_warehouse,
+                                    capacity: values.capacity,
+                                    this_priority: values.priority,
+                                    actual_qty: values.actual_qty,
+                                    is_in_warehouse: true,
+                                    is_stored_here: true,
+                                    is_new_warehouse: true,
+                                    erp_qty: erp_qty 
+                                });
+                                
+                                frm.refresh_field('warehouses');
+                                dialog.hide();
+                            }
+                        });
                     }
                 });
-                
             }
         });
 
         dialog.fields_dict.warehouse.$input.on('change', function() {
             let warehouse = dialog.fields_dict.warehouse.get_value();
+
             if (warehouse) {
                 frappe.call({
                     method: 'jollys_receiving.api.check_warehouse_exists',

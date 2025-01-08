@@ -20,7 +20,8 @@ kg_warehouses = [
     'KG Cosmetics - JP',
     'KG Chinatown - JP',
     'KG Baby - JP',
-    'KG Flour Room - JP'
+    'KG Flour Room - JP',
+    'KG ADULT DIAPER ISLE - JP'
 ]
 
 class StockAudit(StockController):
@@ -63,7 +64,7 @@ class StockAudit(StockController):
         priority_list = []
 
         for warehouse in self.warehouses:
-            if warehouse.this_priority and warehouse.this_priority < 1:
+            if warehouse.is_stored_here and warehouse.this_priority < 1:
                 frappe.throw(
                     title = 'Invalid Priority Error',
                     msg = _(f'Priority for warehouse {warehouse.warehouse} cannot be lesser than 1.')
@@ -153,11 +154,6 @@ class StockAudit(StockController):
         )
 
         for current_bin in bin_list:
-            # TODO: Cleanup negative bin locations by making stock 0 using material receipt
-            # if current_bin_qty < 1:
-            #     self.update_negative_stock(current_bin, current_bin_qty)
-
-            # Only return bins where quantity is more than 0. Avoids negative bin quantities and empty bin locations.
             if current_bin.actual_qty <= 0:
                 continue
             
@@ -293,11 +289,6 @@ class StockAudit(StockController):
                 'uom': uom,
                 'conversion_factor': conversion_factor,
             })
-
-    # def update_negative_stock(self, warehouse, qty):
-    #     negative_warehouse = frappe.db.get_value('Bin', warehouse.name, 'warehouse')
-    #     # difference_qty = abs(qty)
-    #     self.create_material_receipt(negative_warehouse, difference_qty)
 
     def update_supplier_items(self, item_doc, self_supplier_items):
         existing_suppliers = {(item.supplier, item.supplier_part_no) for item in item_doc.supplier_items}
