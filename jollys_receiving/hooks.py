@@ -174,7 +174,7 @@ scheduler_events = {
 # 		"jollys_receiving.tasks.monthly"
 # 	],
     'cron': {
-        '0 4 * * *': [
+        '0 7 * * *': [
             'jollys_receiving.public.set_picklists.schedule_set_picklists'
         ]
     }
