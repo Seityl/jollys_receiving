@@ -16,9 +16,11 @@
   "section_break_stwc",
   "scan_code",
   "item_code",
-  "column_break_nken",
   "item_name",
   "original_item_name",
+  "column_break_nken",
+  "item_group",
+  "original_item_group",
   "section_break_rrxi",
   "item_description",
   "original_item_description",
@@ -161,9 +163,9 @@
    "label": "Supplier Details"
   },
   {
+   "depends_on": "eval:doc.location == 'KG Warehouse - JP';",
    "fieldname": "add_warehouse",
    "fieldtype": "Button",
-   "hidden": 1,
    "label": "Add Warehouse"
   },
   {
@@ -208,7 +210,7 @@
    "fieldtype": "Section Break"
   },
   {
-   "default": "KG Warehouse - JP",
+   "default": "KG Stock - JP",
    "fieldname": "location",
    "fieldtype": "Select",
    "ignore_user_permissions": 1,
@@ -268,13 +270,28 @@
    "label": "Original Supplier Items",
    "options": "Stock Audit Supplier",
    "read_only": 1
+  },
+  {
+   "fieldname": "item_group",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Item Group",
+   "options": "Item Group"
+  },
+  {
+   "fieldname": "original_item_group",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Original Item Group",
+   "options": "Item Group",
+   "print_hide": 1
   }
  ],
  "force_re_route_to_default_view": 1,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-01-06 11:54:58.118087",
+ "modified": "2025-01-30 15:59:53.293492",
  "modified_by": "Administrator",
  "module": "Stock Audit",
  "name": "Stock Audit",

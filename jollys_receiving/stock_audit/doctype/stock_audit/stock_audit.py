@@ -3,26 +3,8 @@
 
 import frappe
 from frappe import _
+from frappe.utils.nestedset import get_descendants_of
 from erpnext.controllers.stock_controller import StockController
-
-kg_warehouses = [
-    'KG Warehouse - JP',
-    'KG Stationary - JP',
-    'KG Pets - JP',
-    'KG Personal Care - JP',
-    'KG OTC - JP',
-    'KG Oral - JP',
-    'KG Household - JP',
-    'KG Haircare - JP',
-    'KG FOOD_SNACK - JP',
-    'KG Flour Room - JP',
-    'KG Drinks - JP',
-    'KG Cosmetics - JP',
-    'KG Chinatown - JP',
-    'KG Baby - JP',
-    'KG Flour Room - JP',
-    'KG ADULT DIAPER ISLE - JP'
-]
 
 class StockAudit(StockController):
     def after_insert(self):
@@ -53,6 +35,9 @@ class StockAudit(StockController):
         self.revert_changes()
         
     def validate_warehouse_capacity(self):
+        if not self.warehouses:
+            return
+            
         for warehouse in self.warehouses:
             if warehouse.is_in_warehouse and warehouse.capacity < warehouse.actual_qty:
                 frappe.throw(
@@ -61,34 +46,47 @@ class StockAudit(StockController):
                 )
 
     def validate_warehouse_priority(self):
-        priority_list = []
+        if not self.warehouses:
+            return
+        
+        priority_set = set()
 
         for warehouse in self.warehouses:
-            if warehouse.is_stored_here and warehouse.this_priority < 1:
+            if not warehouse.reference_putaway_rule:
+                continue
+
+            priority = warehouse.this_priority
+
+            if warehouse.is_stored_here:
+                if priority is None:
+                    frappe.throw(
+                        title='Priority Required',
+                        msg=_(f'Warehouse {warehouse.warehouse} must have a priority set.')
+                    )
+
+                elif priority < 1:
+                    frappe.throw(
+                        title='Invalid Priority',
+                        msg=_(f'Priority for {warehouse.warehouse} cannot be less than 1.')
+                    )
+
+            if priority is not None and priority in priority_set:
                 frappe.throw(
-                    title = 'Invalid Priority Error',
-                    msg = _(f'Priority for warehouse {warehouse.warehouse} cannot be lesser than 1.')
+                    title='Duplicate Priority',
+                    msg=_(f'Priority {warehouse.this_priority} is used multiple times.')
                 )
 
-            if warehouse.this_priority in priority_list:
-                frappe.throw(
-                    title = 'Invalid Priority Error',
-                    msg = _(f'Priority {warehouse.this_priority} appears more than one time.')
-                )
-
-            if frappe.db.exists('Stock Audit', self.name):
-                if warehouse.this_priority != None and warehouse.is_in_warehouse:
-                    priority_list.append(warehouse.this_priority)
-
-            elif warehouse.is_in_warehouse:
-                priority_list.append(warehouse.this_priority)
+            priority_set.add(priority)
 
     def validate_qty(self):
+        if not self.warehouses:
+            return
+
         for warehouse in self.warehouses:
             most_recent_bin = frappe.get_all('Bin',
                 filters = {'item_code':  self.item_code, 'warehouse': warehouse.warehouse},
                 fields = ['name'],
-                order_by = 'creation'
+                order_by = 'creation desc'
             )
 
             if most_recent_bin: 
@@ -120,6 +118,17 @@ class StockAudit(StockController):
         self.item_code = item_code[0][0]
         self.save()
 
+    def get_child_warehouses(self, parent_warehouse:str) -> list:
+        return get_descendants_of("Warehouse", parent_warehouse)
+
+    def get_actual_qty(self, item_code, warehouse):
+        actual_qty = frappe.db.get_value(
+            'Bin',
+            {'item_code': item_code, 'warehouse': warehouse},
+            'actual_qty'
+        )
+        return actual_qty or 0
+
     def get_item_data(self):
         if not self.item_code and not self.scan_code:
             frappe.throw(
@@ -131,6 +140,7 @@ class StockAudit(StockController):
             self.set_item_code()
             
         self.get_item_name()
+        self.get_item_group()
         self.get_item_description()
         self.get_item_bins()
         self.get_expiration_dates()
@@ -143,55 +153,95 @@ class StockAudit(StockController):
         self.item_name = frappe.db.get_value('Item', self.item_code, 'item_name')		
         self.original_item_name = frappe.db.get_value('Item', self.item_code, 'item_name')		
 
+    def get_item_group(self):
+        self.item_group = frappe.db.get_value('Item', self.item_code, 'item_group')		
+        self.original_item_group = frappe.db.get_value('Item', self.item_code, 'item_group')		
+
     def get_item_description(self):
         self.item_description = frappe.db.get_value('Item', self.item_code, 'description')		
         self.original_item_description = frappe.db.get_value('Item', self.item_code, 'description')		
 
     def get_item_bins(self):
         bin_list = frappe.get_all('Bin',
-            filters = {'item_code':  self.item_code},
-            fields = ['warehouse', 'actual_qty']
+            filters={'item_code': self.item_code},
+            fields=['warehouse', 'actual_qty']
         )
 
-        for current_bin in bin_list:
-            if current_bin.actual_qty <= 0:
-                continue
-            
-            if self.location == 'KG Warehouse - JP':
-                reference_rule = self.get_reference_putaway_rule(current_bin.warehouse)
-                current_bin_parent_warehouse = frappe.db.get_value('Warehouse', current_bin.warehouse, 'parent_warehouse')
+        child_warehouses = []
+        if self.location == 'KG Warehouse - JP':
+            child_warehouses = self.get_child_warehouses(self.location)
 
-                if(current_bin_parent_warehouse in kg_warehouses):  
+        location_processed = False
+
+        for current_bin in bin_list:
+            warehouse = current_bin.warehouse
+            actual_qty = current_bin.actual_qty
+
+            if actual_qty <= 0:
+                if self.location != 'KG Warehouse - JP':
+                    continue
+                else:
+                    reference_rule = self.get_reference_putaway_rule(warehouse)
+                    if not reference_rule.get('name'):
+                        continue
+                    else:
+                        self.append('warehouses', {
+                            'item_code': self.item_code,
+                            'item_name': self.item_name,
+                            'warehouse': warehouse,
+                            'capacity': self.get_warehouse_capacity(warehouse),
+                            'erp_qty': actual_qty,
+                            'this_priority': reference_rule.get('priority') or 0,
+                            'actual_qty': 0,
+                            'is_in_warehouse': 0,
+                            'is_stored_here': 1,
+                            'reference_putaway_rule': reference_rule.get('name')
+                        })
+            else:
+                if self.location == 'KG Warehouse - JP' and warehouse in child_warehouses:
+                    reference_rule = self.get_reference_putaway_rule(warehouse)
                     self.append('warehouses', {
                         'item_code': self.item_code,
                         'item_name': self.item_name,
-                        'warehouse': current_bin.warehouse,
-                        'capacity': self.get_warehouse_capacity(current_bin.warehouse),
-                        'erp_qty': current_bin.actual_qty, 
-                        'this_priority': reference_rule.get('priority'),
+                        'warehouse': warehouse,
+                        'capacity': self.get_warehouse_capacity(warehouse),
+                        'erp_qty': actual_qty,
+                        'this_priority': reference_rule.get('priority') or 0,
                         'actual_qty': 0,
-                        'is_in_warehouse': True if current_bin.actual_qty > 0 else False,
-                        'is_stored_here': True if current_bin.actual_qty > 0 else False,
+                        'is_in_warehouse': 1,
+                        'is_stored_here': 1,
                         'reference_putaway_rule': reference_rule.get('name')
-                    })	
-                    
-            elif current_bin.warehouse == self.location:
-                self.append('warehouses', {
-                    'item_code': self.item_code,
-                    'item_name': self.item_name,
-                    'warehouse': current_bin.warehouse,
-                    'capacity': self.get_warehouse_capacity(current_bin.warehouse),
-                    'erp_qty': current_bin.actual_qty, 
-                    'actual_qty': 0,
-                    'is_in_warehouse': True if current_bin.actual_qty > 0 else False,
-                    'is_stored_here': True if current_bin.actual_qty > 0 else False
-                })	
+                    })
 
-                break
+                elif warehouse == self.location:
+                    self.append('warehouses', {
+                        'item_code': self.item_code,
+                        'item_name': self.item_name,
+                        'warehouse': warehouse,
+                        'capacity': self.get_warehouse_capacity(warehouse),
+                        'erp_qty': actual_qty,
+                        'actual_qty': 0,
+                        'is_in_warehouse': 1,
+                        'is_stored_here': 1
+                    })
+                    location_processed = True
+                    break
+                
+        if self.location != 'KG Warehouse - JP' and not location_processed:
+            self.append('warehouses', {
+                'item_code': self.item_code,
+                'item_name': self.item_name,
+                'warehouse': self.location,
+                'capacity': self.get_warehouse_capacity(self.location),
+                'erp_qty': self.get_actual_qty(self.item_code, self.location),
+                'actual_qty': 0,
+                'is_in_warehouse': 1,
+                'is_stored_here': 1
+            })
 
     def get_reference_putaway_rule(self, warehouse):
         putaway_rule = frappe.get_all('Putaway Rule', 
-            filters = {'item_code': self.item_code, 'warehouse': warehouse},
+            filters = {'item_code': self.item_code, 'warehouse': warehouse, 'disable': 0},
             fields = ['name']
         )
 
@@ -364,6 +414,10 @@ class StockAudit(StockController):
 
         if (item_doc.item_name != self.item_name):
             item_doc.item_name = self.item_name
+            updated = True
+
+        if (item_doc.item_group != self.item_group):
+            item_doc.item_group = self.item_group
             updated = True
 
         if (item_doc.description != self.item_description):
@@ -603,6 +657,10 @@ class StockAudit(StockController):
 
         if (item_doc.item_name != self.original_item_name):
             item_doc.item_name = self.original_item_name
+            updated = True
+
+        if (item_doc.item_group != self.original_item_group):
+            item_doc.item_group = self.original_item_group
             updated = True
 
         if (item_doc.description != self.original_item_description):

@@ -10,18 +10,10 @@ frappe.ui.form.on('Stock Audit', {
         frm.get_field('warehouses').grid.cannot_add_rows = true;
         // Hides Delete button from warehouses child table
         frm.set_df_property('warehouses', 'cannot_delete_rows', 1);
-        
-        if(frm.doc.location != 'KG Warehouse - JP') {
-            frm.fields_dict.warehouses.grid.update_docfield_property('this_priority', 'hidden', 1);
-            frm.fields_dict.warehouses.grid.update_docfield_property('capacity', 'hidden', 1);
-            frm.fields_dict.warehouses.grid.update_docfield_property('is_stored_here', 'hidden', 1);
-            frm.fields_dict.warehouses.grid.update_docfield_property('capacity', 'read_only', 1);
-            frm.fields_dict.warehouses.grid.update_docfield_property('this_priority', 'read_only', 1);
-            frm.fields_dict.warehouses.grid.update_docfield_property('is_stored_here', 'read_only', 1);
-        }
     },
     
     refresh: function(frm) {
+        frm.fields_dict['warehouses'].grid.wrapper.find('.row-check').hide();
         // Hides Add Row button from warehouses child table
         frm.get_field('warehouses').grid.cannot_add_rows = true;
         // Hides Delete button from warehouses child table
@@ -30,15 +22,12 @@ frappe.ui.form.on('Stock Audit', {
         if(frm.is_new()) {
             frm.fields_dict.scan_code.input.focus();
         }
-
-        if(frm.doc.location == 'KG Warehouse - JP') {
-            frm.set_df_property('add_warehouse', 'hidden', 0);
-        }
         
         if(!frm.is_new()) {
             frm.set_df_property('scan_code', 'hidden', 1);
             frm.set_df_property('section_break_hwht', 'hidden', 1);
             frm.set_df_property('item_name', 'hidden', 0);
+            frm.set_df_property('item_group', 'hidden', 0);
             frm.set_df_property('item_code', 'read_only', 1);
             frm.set_df_property('section_break_rrxi', 'hidden', 0);
             frm.set_df_property('posting_details_section', 'hidden', 0);
