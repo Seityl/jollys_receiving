@@ -1,0 +1,98 @@
+{
+ "actions": [],
+ "allow_copy": 1,
+ "creation": "2025-01-31 10:20:10.691128",
+ "description": "Item Reorder Level Initializer",
+ "doctype": "DocType",
+ "document_type": "Document",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_inuy",
+  "column_break_kwbd",
+  "add_items_from_pr",
+  "column_break_zdeg",
+  "add_items_from_po",
+  "column_break_hbxf",
+  "add_item",
+  "section_break_rzwy",
+  "items"
+ ],
+ "fields": [
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "options": "Item Reorder Level Initializer Item"
+  },
+  {
+   "fieldname": "add_item",
+   "fieldtype": "Button",
+   "label": "Add Individual item"
+  },
+  {
+   "fieldname": "section_break_rzwy",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_zdeg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_hbxf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_kwbd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_inuy",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "add_items_from_pr",
+   "fieldtype": "Button",
+   "label": "Add Item From Purchase Receipt"
+  },
+  {
+   "fieldname": "add_items_from_po",
+   "fieldtype": "Button",
+   "label": "Add Item From Purchase Order"
+  }
+ ],
+ "hide_toolbar": 1,
+ "in_create": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2025-01-31 11:31:50.133894",
+ "modified_by": "Administrator",
+ "module": "Stock Audit",
+ "name": "Item Reorder Level Initializer",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Stock Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "show_name_in_global_search": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_seen": 1,
+ "track_views": 1
+}

@@ -413,6 +413,83 @@ def check_warehouse_exists(warehouse_name):
             'message': f'{e}'
         }
 
+@frappe.whitelist()
+def get_item_name(item_code):
+    return frappe.db.get_value('Item', item_code, 'item_name')
+
+@frappe.whitelist()
+def check_existing_reorder(item_code, warehouse=None):
+    if warehouse and warehouse != 'All Stores':
+        exists = frappe.db.exists("Item Reorder", {
+            "parent": item_code,
+            "warehouse": warehouse,
+        })
+
+    elif not warehouse or warehouse == 'All Stores':    
+        exists = frappe.db.exists("Item Reorder", {
+            "parent": item_code,
+        })
+    
+    return {"exists": bool(exists)}
+
+import json
+
+@frappe.whitelist()
+def apply_reorder_levels(items):
+    stores = {
+        'KG Stock - JP': 'KG Store - JP',
+        'Mega Retail - JP': 'MEGA Store - JP', 
+        'GG Stock - JP': 'GG Store - JP',
+        'JPPM Stock - JP': 'JPPM Store - JP',
+        'JPMini Stock - JP': 'JPMini Store - JP'
+    }
+
+    applied_items = []
+    items = json.loads(items)
+
+    for item in items:
+        item_code = item['item_code']
+        try:
+            item_doc = frappe.get_doc('Item', item_code)
+            target_stores = []
+            
+            if item.get('store') == 'All Stores':
+                target_stores = stores.items()
+
+            else:
+                if item.get('store') in stores:
+                    target_stores = [(item['store'], stores[item['store']])]
+
+            applied = False
+            
+            for store, group in target_stores:
+                exists = False
+
+                for reorder in item_doc.get('reorder_levels', []):
+                    if reorder.warehouse == store:
+                        exists = True
+                        break
+
+                # Skip JP Mini since they do not carry all items
+                if not exists and store != 'JPMini Stock - JP':
+                    item_doc.append('reorder_levels', {
+                        'warehouse': store,
+                        'warehouse_group': group,
+                        'material_request_type': 'Transfer',
+                        'warehouse_reorder_level': item['warehouse_reorder_level'],
+                        'warehouse_reorder_qty': item['warehouse_reorder_qty']
+                    })
+                    applied = True
+            
+            if applied:
+                item_doc.save()
+                applied_items.append(item_code)
+            
+        except Exception as e:
+            frappe.log_error(f"Failed to update reorder levels for {item_code}: {str(e)}")
+            frappe.throw(f"Error processing {item_code}: {str(e)}")
+    
+    return applied_items
 
 # @frappe.whitelist()
 # @frappe.validate_and_sanitize_search_inputs
