@@ -164,9 +164,9 @@ scheduler_events = {
 # 	"daily": [
 # 		"jollys_receiving.tasks.daily"
 # 	],
-# 	"hourly": [
-# 		"jollys_receiving.tasks.hourly"
-# 	],
+	'hourly': [
+		'jollys_receiving.api.stop_completed_material_requests'
+	],
 # 	"weekly": [
 # 		"jollys_receiving.tasks.weekly"
 # 	],

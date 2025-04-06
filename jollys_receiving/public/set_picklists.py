@@ -30,7 +30,7 @@ def schedule_create_pick_lists(split_mr_list):
         queue = 'long',
         timeout = 3600,
         is_async = True,
-        now = False, 
+        now = False,
         job_name = 'Set Auto Reorder Pick Lists',
         split_mr_list = split_mr_list
     )
@@ -49,29 +49,13 @@ def generate_auto_reorder_material_requests(reorder_settings):
         mr_doc = frappe.get_doc('Material Request', mr.name)
 
         if  mr_doc.material_request_type != 'Material Transfer':
-            frappe.db.savepoint('sp1')
-
-            if mr_doc.docstatus == 0 or mr_doc.docstatus == 2:
-                try:
-                    mr_doc.delete() 
-                    frappe.db.commit()
-
-                except Exception as e:
-                    frappe.db.rollback()
-                    frappe.log_error(frappe.get_traceback(), "Error in generate_auto_reorder_material_requests()")
-                    continue
+            if mr_doc.docstatus == 0:
+                mr_doc.delete() 
 
             elif mr_doc.docstatus == 1:
-                try:
-                    mr_doc.docstatus = 2
-                    mr_doc.save()
-                    mr_doc.delete()
-                    frappe.db.commit()
-
-                except Exception as e:
-                    frappe.db.rollback()
-                    frappe.log_error(frappe.get_traceback(), "Error in generate_auto_reorder_material_requests()")
-                    continue
+                mr_doc.docstatus = 2
+                mr_doc.save()
+                mr_doc.delete()
 
         doc_locations = []
     

@@ -517,3 +517,18 @@ def apply_reorder_levels(items):
 # def send_email_notification(mr_list=None):
 #     # msg = frappe.render_template('templates/emails/reorder_item.html', {'mr_list': mr_list})
 #     frappe.sendmail(recipients=get_system_managers(), subject=_('{[ERPNext] Auto Reorders Generated'), message='msg')
+
+from erpnext.stock.doctype.material_request.material_request import update_status
+
+@frappe.whitelist()
+def stop_completed_material_requests():
+    mr_list = frappe.db.get_list('Material Request', filters={'docstatus': 1, 'status': ['in',['Pending', 'Partially Ordered']]}, fields=['name'])    
+    for mr in mr_list:
+        if not frappe.db.exists('Pick List', {'material_request': mr.name}):
+            continue
+        if frappe.db.exists('Pick List', {'material_request': mr.name, 'workflow_state': ['!=', 'Stock Entry']}):
+            continue
+        update_status(mr, 'Stopped')
+        frappe.get_doc("Material Request", mr.name).add_comment("Info",
+            'Material Request <strong style="color: red;">stopped</strong> because all associated pick lists have been completed'
+        )
