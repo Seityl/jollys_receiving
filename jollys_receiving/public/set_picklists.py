@@ -150,6 +150,7 @@ def create_pick_lists(split_mr_list):
                             'item_code': item.item_code,
                             'stock_qty': item.qty,
                             'material_request': material_request.name,
+                            'use_serial_batch_fields': 0,
                             'material_request_item': item.name,
                             "conversion_factor": item.conversion_factor,
                             "uom": item.uom
