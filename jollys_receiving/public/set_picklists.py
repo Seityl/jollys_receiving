@@ -50,12 +50,14 @@ def generate_auto_reorder_material_requests(reorder_settings):
 
         if  mr_doc.material_request_type != 'Material Transfer':
             if mr_doc.docstatus == 0:
-                mr_doc.delete() 
+                mr_doc.delete()
+                continue
 
             elif mr_doc.docstatus == 1:
                 mr_doc.docstatus = 2
                 mr_doc.save()
                 mr_doc.delete()
+                continue
 
         doc_locations = []
     
